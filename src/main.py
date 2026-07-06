@@ -58,7 +58,18 @@ class AWSMonitorAgent:
 
     def __generate_viz(self):
         # From bucket, obtain 5 records over a period, and auto generate a viz from matpltlib
-        pass
+        git_link = "https://github.com/ajlrza/aws_benchmark_q-algorithms.git"
+        list_objects = self.s3.list_objects_v2(
+            Bucket=f"{self._get_credentials_dict()}'s Bucket",
+            MaxKeys=5
+        )
+
+        if 'Contents' in response:
+         for obj in response['Contents']:
+             get_object = self.s3.get_object(
+                 Bucket=f"{self._get_credentials_dict()}'s Bucket",
+                 Key=obj['Key']
+             )
 
     def get_s3_resource(self):
         try:
