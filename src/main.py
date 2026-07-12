@@ -9,30 +9,14 @@ from botocore.exceptions import ClientError, NoCredentialsError, EndpointConnect
 
 class ExperimentMonitor:
 
-    '''
+    """
       Monitors the experiment code ran on the local machine
       and gathers local-bound metrics using the psutil library
-    '''
+    """
 
-    def __init__(self, sts_client: object):
-        
-        if not sts_client:
-            raise ValueError("Missing required variables: sts_client")
-        
-        self.access_key = os.environ.get("AWS_ACCESS_KEY_ID")
-        self.secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY")
-        
-        self.infra_monitor = InfrastructureMonitor(self.access_key, self.secret_key)
-        self.sts_client = sts_client
-        self.identity = self.sts_client.get_caller_identity()
-        self.region_name = "us-east-1"
+    def __init__(self, results):    
 
-        self.results = None
-        self.experiment_id = "qi26_26_QRNG_"
-        self.simulator = None
-        self.circuit_params = {}
-        self.metrics = {}
-        self.environment = {}
+        self.results = results
 
         self.start_time = datetime.fromtimestamp(time.time()) 
         self.computer_time = time.time()
@@ -66,7 +50,6 @@ class ExperimentMonitor:
 
             sig = inspect.signature(func)
             bound_args = sig.bind(*args, **kwargs)
-            #bound_args.apply_defaults() 
             params = dict(bound_args.arguments)
             
             return params
@@ -74,11 +57,11 @@ class ExperimentMonitor:
     
 class InfrastructureMonitor:
 
-    '''
+    """
       Monitors the cloud infrastructure and gathers AWS-bound 
       metrics using the boto3 through ec2 client and cloudwatch
       client
-    '''
+    """
 
     def __init__(self, region_name = "us-east-1"):
 
