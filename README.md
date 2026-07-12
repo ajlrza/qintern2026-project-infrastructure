@@ -10,3 +10,24 @@ It contains:
 - Infrastructure as Code
 - YAML
 - .env.example
+
+## Repository Structure
+```text
+📂 src
+├── 📁 logger
+│   └── 📄 logger.py
+├── 📁 monitors
+│   ├── 📁 local
+│   │   └── 📄 local_monitor.py
+│   ├── 📁 cloud
+│   │   └── 📁 braket
+│   │   │   └── 📄 braket_monitor.py
+│   │   └──📁 ec2
+│   │       └── 📄 ec2_monitor.py
+│   │
+├── 📄 .env.example
+├── 📄 README.md
+├── 📄 dev-config.yaml
+└── 📄 prod-config.yaml
+
+```
