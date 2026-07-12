@@ -1,13 +1,13 @@
-def get_braket_infrastructure_metrics(self, run_result):
+def get_braket_infrastructure_metrics(infra_monitor_class, run_result):
 
         usage_results = {}
 
         infra_results = {}
 
         tasks = {
-            'get_quantum_task': self.braket_client.get_quantum_task, 
-            'search_quantum_tasks': self.braket_client.search_quantum_tasks, 
-            'get_job': self.braket_client.get_job
+            'get_quantum_task': infra_monitor_class.braket_client.get_quantum_task, 
+            'search_quantum_tasks': infra_monitor_class.braket_client.search_quantum_tasks, 
+            'get_job': infra_monitor_class.braket_client.get_job
         }
         
         tasks_config = {
@@ -22,7 +22,7 @@ def get_braket_infrastructure_metrics(self, run_result):
             )
             infra_results[task] = result
 
-        braket_usage = self.braket_client.search_spending_limits(
+        braket_usage = infra_monitor_class.braket_client.search_spending_limits(
             maxResults=5,
             filters=[
                 {

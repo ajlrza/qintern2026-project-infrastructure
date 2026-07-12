@@ -1,6 +1,8 @@
-def get_instance_attributes(self):
+from datetime import datetime, timezone, timedelta
 
-        get_instance = self.ec2_client.describe_instances() 
+def get_instance_attributes(infra_monitor_class):
+
+        get_instance = infra_monitor_class.ec2_client.describe_instances() 
 
         ec2_instance = {
             "instance_id": get_instance["Reservations"]["Instances"]["InstanceId"],
@@ -9,13 +11,13 @@ def get_instance_attributes(self):
             "architecture": get_instance["Reservations"]["Instances"]["Architecture"],
         }
 
-        get_types = self.ec2_client.describe_instance_types(
+        get_types = infra_monitor_class.ec2_client.describe_instance_types(
             InstanceTypes=['t3.micro', 'm5.large']
         )
 
         ec2_instance_attributes = None
 
-        for instance in self.get_types['InstanceTypes']:
+        for instance in infra_monitor_class.get_types['InstanceTypes']:
 
             result = {
                 "vCPUs": f"{instance['VCpuInfo']['DefaultVCpus']}",
@@ -32,7 +34,7 @@ def get_instance_attributes(self):
         
         return ec2_logged_data
             
-def get_ec2_infrastructure_metrics(self):
+def get_ec2_infrastructure_metrics(infra_monitor_class):
 
         infra_metrics = ['CPUUtilization', 'mem_used_percent', 'NetworkIn', 'NetworkOut', 'DiskReadOps', 'DiskWriteOps']
         infra_results = []
@@ -45,7 +47,7 @@ def get_ec2_infrastructure_metrics(self):
         for metric in infra_metrics:
 
             if (metric == 'mem_used_percent'):
-                ram_response = self.cw_client.get_metric_statistics(
+                ram_response = infra_monitor_class.cw_client.get_metric_statistics(
                 Namespace='CWAgent',
                 MetricName=metric,
                 Dimensions=[{'Name': 'InstanceId', 'Value': 'i-0123456789abcdef0'}],
@@ -69,7 +71,7 @@ def get_ec2_infrastructure_metrics(self):
                 infra_results.append(ram_response)
 
             average = 0
-            metrics = self.cw_client.get_metric_statistics(
+            metrics = infra_monitor_class.cw_client.get_metric_statistics(
                 Namespace='AWS/EC2',
                 MetricName=metric,
                 Dimensions=[{'Name': 'InstanceId', 'Value': 'i-0123456789abcdef0'}],
@@ -93,7 +95,7 @@ def get_ec2_infrastructure_metrics(self):
             
             infra_results.append(metrics)
 
-        ec2_usage = self.ec2_client.describe_instances(
+        ec2_usage = infra_monitor_class.ec2_client.describe_instances(
                 Filters=[{'Name': 'instance-state-name', 'Values': ['running']}]
             )
 

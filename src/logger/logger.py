@@ -1,19 +1,20 @@
-import json, base64, datetime, datetime, timezone
+import json, base64, os
+from datetime import datetime, timezone, timedelta
 
 
-def log_to_repo(self, results: object, experiment_function, monitored_results: dict, notes: str, benchmark_type: str):
+def log_to_repo(experiment_monitor_class, infra_monitor_class, results: object, experiment_function, monitored_results: dict, notes: str, benchmark_type: str):
         """Logs the associated data to the GitHub repo."""
 
-        infra_monitor = InfrastructureMonitor(self.access_key, self.secret_key)
+        infra_monitor = infra_monitor_class(os.environ.get["ACCESS_KEY"], os.environ.get["SECRET_ACCESS_KEY"])
         get_infra_attr = infra_monitor.get_instance_attributes
 
         experiment_count += 1
-        self.experiment_id += self.experiment_id + f"_00{experiment_count}"
-        self.results = results
-        self.notes = notes
+        experiment_monitor_class.experiment_id += experiment_monitor_class.experiment_id + f"_00{experiment_count}"
+        experiment_monitor_class.results = results
+        experiment_monitor_class.notes = notes
 
         experiment_log = {
-            "experiment_id": self.experiment_id,
+            "experiment_id": experiment_monitor_class.experiment_id,
             "benchmark_type": benchmark_type,
             "timestamp":  datetime.now(timezone.utc).isoformat(),
             "simulator": "LocalSimulator",
@@ -46,7 +47,7 @@ def log_to_repo(self, results: object, experiment_function, monitored_results: d
             "notes": notes
         }
 
-        get_experiment_params = self.__get_params(experiment_function)
+        get_experiment_params = experiment_monitor_class.__get_params(experiment_function)
 
         for param, value in get_experiment_params.items():
             if (param in experiment_log['circuit_params'].keys()):
@@ -58,7 +59,7 @@ def log_to_repo(self, results: object, experiment_function, monitored_results: d
 
         repo_url = os.environ.get("REPO_URL")
         functions_to_run = []
-        functions_to_run.append(("EC2", self.monitor_ec2_vm()))
+        functions_to_run.append(("EC2", infra_monitor_class.monitor_ec2_vm()))
 
         snapshot = {
             name: monitor_func for name, monitor_func in functions_to_run
