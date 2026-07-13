@@ -3,7 +3,7 @@ import psutil
 from datetime import datetime, timezone
 import time
 
-def local_machine_monitor(experiment_function, params: dict):
+def machine_local_monitor(experiment_function, params: dict):
         """Calculates system utilization and latency in the local machine."""
 
         monitor_results = {}
@@ -30,7 +30,7 @@ def local_machine_monitor(experiment_function, params: dict):
         return monitor_results
 
 
-def monitor_experiment(infra_monitor_class, experiment_monitor_class, experiment_function, params: dict):
+def experiment_local_monitor(infra_monitor_class, experiment_monitor_class, experiment_function, params: dict):
         infra_monitor_instance = infra_monitor_class()
         
         initial_metrics = experiment_monitor_class.__get_metrics()

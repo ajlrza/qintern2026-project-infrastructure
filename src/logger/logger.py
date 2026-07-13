@@ -1,12 +1,23 @@
 import platform
 import json, base64, os
+from dataclasses import asdict
 import braket._sdk as braket_sdk
+from config.credentials_config import CredsConfig
 from datetime import datetime, timezone, timedelta
-from monitors.local.local_monitor import experiment_monitor_class
-from classes import InfrastructureMonitor
-from classes import ExperimentMonitor
+from classes import InfrastructureMonitor, ExperimentMonitor
+from config.experiment_config import ExpConfig, CircParams, Metrics, Environ, Gates
+from config.master_config import Config
+from monitors.local.local_monitor import machine_local_monitor, experiment_local_monitor
+from monitors.cloud.ec2.ec2_monitor import ec2_machine_cloud_monitor, ec2_instance_monitor
 
-def log_to_repo(results: object, experiment_function, monitored_results: dict, notes: str, benchmark_type: str):
+def log_to_repo(
+          sts_client: object, 
+          results: object, 
+          experiment_function, 
+          monitored_results: dict, 
+          notes: str, 
+          benchmark_type: str):
+        
         """Logs the associated data to the GitHub repo."""
 
         exp_monitor = ExperimentMonitor()
@@ -20,48 +31,39 @@ def log_to_repo(results: object, experiment_function, monitored_results: dict, n
         local_results = monitored_results["Local Machine Data"]
         cloud_results = monitored_results["Cloud Machine Data"]
 
-        experiment_log = {
-            "experiment_id": exp_monitor.experiment_id,
-            "benchmark_type": benchmark_type,
-            "timestamp":  datetime.now(timezone.utc).isoformat(),
-            "simulator": "LocalSimulator",
-            "circuit_params": {
-                "qubits": 0,
-                "depth": 0,
-                "shots": 0,
-                "gates": {
-                    "H": 0,
-                    "CNOT": 0,
-                    "other": 0
-                }
-            },
-            "metrics": {
-                "circuit_fidelity_dR2": 0.0,
-                "shot_noise_converged_at": "int",
-                "cv_value": "float",
-                "local_vs_sv1_ks_pvalue": "float",
-                "gate_error_rate_tested": "float",
-                "fidelity_under_noise": "float",
-                "measurement_bias_pvalue": "float",
-                "runtime_seconds": ([local_results, cloud_results] if (local_results and cloud_results)  else (local_results or cloud_results)),
-                "cloud_overhead_seconds": cloud_results[""]
-            },
-            "environment": {
-                "braket_sdk_version": braket_sdk.__version__,
-                "python_version": platform.python_version(),
-                "instance_type": get_infra_attr['ec2_instance']['instance_type']
-            },
-            "notes": notes
-        }
+        config = Config()
+
+        config.creds.sts_client = sts_client
+
+        config.exp.experiment_id = exp_monitor.experiment_id
+        config.exp.benchmark_type = benchmark_type
+        config.exp.timestamp = datetime.now(timezone.utc).isoformat()
+        config.exp.simulator = "LocalSimulator"
+        config.exp.notes = notes
+
+        config.circ.depth = 0
+        config.circ.qubits = 0
+        config.circ.shots = 1000
+        config.circ.gates.H = 0
+        config.circ.gates.CNOT = 0
+        config.circ.gates.Others = 0
+
+        config.metric.runtime_seconds = ([local_results, cloud_results] if (local_results and cloud_results) else (local_results or cloud_results))
+
+        config.env.braket_sdk_version = braket_sdk.__version__
+        config.env.python_version = platform.python_version()
+        config.env.instance_type = get_infra_attr['ec2_instance']['instance_type']
 
         get_experiment_params = exp_monitor.__get_params(experiment_function)
 
+        final_experiment_log = asdict(config)
+
         for param, value in get_experiment_params.items():
-            if (param in experiment_log['circuit_params'].keys()):
-                experiment_log['circuit_params'][param] = value
+            if (param in asdict(config.circ)):
+                asdict(config.exp)['circuit_params'][param] = value
             else:
-                if (param == experiment_log['circuit_params']['gates']):
-                    experiment_log['circuit_params']['gates'][param] = value
+                if (param ==  asdict(config.exp)['circuit_params']['gates']):
+                     asdict(config.exp)['circuit_params']['gates'][param] = value
 
 
         repo_url = os.environ.get("REPO_URL")

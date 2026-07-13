@@ -1,8 +1,9 @@
 from datetime import datetime, timezone, timedelta
+from monitors.local.local_monitor import machine_local_monitor
 from botocore.exceptions import ClientError, NoCredentialsError, EndpointConnectionError
 
 
-def get_instance_attributes(infra_monitor_class):
+def ec2_instance_monitor(infra_monitor_class, experiment_function):
 
         try:
             get_instance = infra_monitor_class.ec2_client.describe_instances()
@@ -13,7 +14,7 @@ def get_instance_attributes(infra_monitor_class):
 
              match response:
                   case "Y":
-                       local_monitor = local_machine_monitor(experiment_function, params: dict)
+                       local_monitor = machine_local_monitor(experiment_function)
                        return local_monitor
                   case "N":
                        return 1
@@ -48,7 +49,7 @@ def get_instance_attributes(infra_monitor_class):
         
         return ec2_logged_data
             
-def get_ec2_infrastructure_metrics(infra_monitor_class):
+def ec2_machine_cloud_monitor(infra_monitor_class):
 
         infra_metrics = ['CPUUtilization', 'mem_used_percent', 'NetworkIn', 'NetworkOut', 'DiskReadOps', 'DiskWriteOps']
         infra_results = []
