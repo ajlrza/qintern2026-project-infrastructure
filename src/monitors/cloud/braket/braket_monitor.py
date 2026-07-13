@@ -1,6 +1,57 @@
+import os
+from monitors.local.local_monitor import machine_local_monitor
 from botocore.exceptions import ClientError, NoCredentialsError, EndpointConnectionError
 
-def get_braket_infrastructure_metrics(infra_monitor_class, run_result):
+def get_braket_infrastructure_metrics(experiment_function, infra_monitor_class, run_result):
+        
+        try:
+            get_instance = infra_monitor_class.braket_client.get_quantum_task()
+
+        except ClientError:
+             
+             print("Client error has occured, would you like to route to local monitor?")
+             response = input("Enter Y/N")
+
+             match response:
+                  
+                  case "Y":
+                       local_monitor = machine_local_monitor(experiment_function)
+                       return local_monitor
+                  
+                  case "N":
+                       return 1
+                  
+        except NoCredentialsError:
+             print("No credentials used, would you like to route to local monitor or redo?")
+             response = input("Enter Y/N")
+
+             match response:
+                  
+                  case "Y":
+                       local_monitor = machine_local_monitor(experiment_function)
+                       return local_monitor
+                  
+                  case "N":
+                       print("Retrieving credentials from the environment variables..")
+
+                       access_key = os.environ.get("AWS_ACCESS_KEY")
+                       secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY")    
+
+                       try:
+                           new_infra_monitor_instance = infra_monitor_class(access_key, secret_key)
+                           get_instance = new_infra_monitor_instance.ec2_client.describe_instances()
+
+                       except NoCredentialsError as E:
+                           print(f"{E} has occured, defaulting to local monitor...")
+
+                           local_monitor = machine_local_monitor(experiment_function)
+                           return local_monitor
+                       
+        except EndpointConnectionError:
+             print("Connection error, defaulting to local monitor..")
+
+             local_monitor = machine_local_monitor(experiment_function)
+             return local_monitor
 
         usage_results = {}
 
