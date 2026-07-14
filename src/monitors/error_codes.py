@@ -1,4 +1,6 @@
 import threading
+import boto3
+from boto3.s3.transfer import TransferConfig
 
 def RequestDelayerV1(request: object):
     timer = threading.Timer(2.0, request)
@@ -8,6 +10,35 @@ def RequestDelayerV2(request: object):
     timer = threading.Timer(100.0, request)
     timer.start()
 
+def ApplyS3Constraint(max_concurrency=1, disable_multithreading=False):
+    config = TransferConfig(
+    max_concurrency=max_concurrency,       
+    use_threads=disable_multithreading       
+    )
+
+def AttachResourcePolicy(user_policy=False, role_policy=False, group_policy=False):
+    client = boto3.client("IAM")
+    
+    for policy in [user_policy, role_policy, group_policy]:
+
+        if policy:
+
+            policy_name = f"{policy=}".split('=')[0]
+
+            slice_policy_name = policy_name.rsplit("_")
+            target = slice_policy_name[0].capitalize()
+
+            ask_user_for_name = input(f"Please input the {target}Name")
+            ask_user_for_policy_arn = input(f"Please input the PolicyArn")
+
+            args = {f"{target}Name": ask_user_for_name, "PolicyArn": ask_user_for_policy_arn}
+
+            target_policy = f"attach_{policy}"
+            boto_attach_policy_method = getattr(client, target_policy)
+
+            attach_policy = boto_attach_policy_method(
+                **args
+            )
 
 error_codes = {
     # --- Throttling & Rate Limits ---
@@ -16,11 +47,11 @@ error_codes = {
     "ThrottlingException": RequestDelayerV2,
     "RequestLimitExceeded": RequestDelayerV2,
     "ProvisionedThroughputExceededException": "Exceeded provisioned capacity (common in DynamoDB).",
-    "TooManyRequestsException": "API gateway or service-specific rate limit hit.",
-    "SlowDown": "S3 or the storage service requires you to reduce request frequency.",
+    "TooManyRequestsException": RequestDelayerV2,
+    "SlowDown": ApplyS3Constraint,
 
     # --- Authentication & Access ---
-    "AccessDenied": "Explicitly blocked by IAM or resource policies.",
+    "AccessDenied": AttachResourcePolicy,
     "AccessDeniedException": "Insufficient permissions to perform this action.",
     "UnrecognizedClientException": "Invalid, unknown, or malformed AWS access keys.",
     "InvalidSignatureException": "Signature mismatch or temporary credentials expired.",
