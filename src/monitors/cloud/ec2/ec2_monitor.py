@@ -76,6 +76,7 @@ def ec2_instance_monitor(infra_monitor_class, experiment_function):
         for instance in infra_monitor_class.instance_types['InstanceTypes']:
 
             result = {
+                "Instance": f"{instance['InstanceType']}",
                 "vCPUs": f"{instance['VCpuInfo']['DefaultVCpus']}",
                 "Memory": f"{instance['MemoryInfo']['SizeInMiB']} MiB",
                 "Processor": f"{instance['ProcessorInfo']}",

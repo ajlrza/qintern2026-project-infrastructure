@@ -14,16 +14,14 @@ class ExperimentMonitor:
       and gathers local-bound metrics using the psutil library
     """
 
-    def __init__(self, results):    
+    def __init__(self):    
 
         """
         Initializes experiment monitor instance, used to wrap and extract params
 
         Args:
-            results (obj): The raw string to be cleaned.
+            experiment (Callable): The experiment function to be called and monitored
 
-        Returns:
-            str: The sanitized, lowercase string.
         """
 
         self.start_time = datetime.fromtimestamp(time.time()) 
@@ -55,7 +53,7 @@ class ExperimentMonitor:
         
         return local_results
     
-    def monitor_cloud(sts_client: object, experiment_function: object):
+    def monitor_cloud(config, sts_client: object, experiment_function: object):
         """
         Orchestrates modules for cloud monitoring, acts as the main function to use for cloud monitoring.
 
@@ -192,13 +190,13 @@ class InfrastructureMonitor:
                        except NoCredentialsError as E:
                            print(f"{E} has occured, defaulting to local monitor...")
 
-                           local_monitor = experiment_local_monitor(experiment_function)
+                           local_monitor = monitor_local(experiment_function)
                            return local_monitor
                        
         except EndpointConnectionError:
              print("Connection error, defaulting to local monitor..")
 
-             local_monitor = experiment_local_monitor(experiment_function)
+             local_monitor = monitor_local(experiment_function)
              return local_monitor
 
       

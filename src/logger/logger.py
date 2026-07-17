@@ -7,7 +7,6 @@ from classes import InfrastructureMonitor, ExperimentMonitor
 
 def log_to_repo(
           sts_client: object, 
-          results: object, 
           experiment_function, 
           monitored_results: dict, 
           notes: str, 
