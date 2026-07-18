@@ -1,5 +1,6 @@
 import threading, psutil, time, json
 from typing import Callable, Any, Dict
+from datetime import datetime, timezone
 
 def local_user_monitor(experiment_function: Callable, params: Dict[str, Any]):
         """Calculates system utilization and latency in the local machine."""
@@ -22,7 +23,9 @@ def local_user_monitor(experiment_function: Callable, params: Dict[str, Any]):
             monitor_results[f"Local CPU Usage: Thread {thread_count}"] = psutil.cpu_percent(interval=0.1) 
             monitor_results[f"Local RAM Usage: Thread {thread_count}"] = psutil.virtual_memory().percent
             monitor_results[f"Local I/O Disk Latency: Thread {thread_count}"] = psutil.disk_io_counters()
+        
+        monitor_results["Datetime"] = str(datetime.now(timezone.utc))
 
 
         print(monitor_results)
-        return json.dumps(monitor_results)
+        return monitor_results

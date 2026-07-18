@@ -1,6 +1,7 @@
-import boto3, os
+import boto3, os, requests, base64, json
 import numpy as np
 import matplotlib.pyplot as plt
+from datetime import datetime
 from braket.circuits import Circuit
 from braket.devices import LocalSimulator
 from src.classes import ExperimentMonitor, InfrastructureMonitor
@@ -27,11 +28,65 @@ def quantum_rng(n_bits, shots=10000):
 
     return result.measurement_counts
 
-experiment_result = quantum_rng(n_bits=4, shots=10000)
+def automated_test(experiment_function, experiment_params, tests=0):
+    test_results = []
+    experiment_monitor_result = None
+
+    token = os.environ.get("PAT_TOKEN")
+    owner = os.environ.get("GITHUB_USERNAME")
+    repo = os.environ.get("REPOSITORY_NAME")
+
+    datetime_now = datetime.now()
+    path = f"test_logs/monitor_test_{datetime.now()}" 
+    branch = "main"  
+
+    url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}.md"
+
+    file_content = None
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Accept": "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28"
+    }
+
+    if (tests > 0):
+        test_iteration = 0
+        while (test_iteration != tests):
+
+            test_iteration += 1
+            
+            experiment_monitor_class = ExperimentMonitor()
+            experiment_monitor_result = experiment_monitor_class.monitor_local(experiment_function, experiment_params)
+            
+            test_results.append(experiment_monitor_result)
+
+        file_content = json.dumps(test_results, indent=2)
+        encoded_content = base64.b64encode(file_content.encode("utf-8")).decode("utf-8")
+        payload = {
+            "message": f"{test_iteration} Monitor Tests",  
+            "content": encoded_content,
+            "branch": branch
+        }
+        response = requests.put(url, json=payload, headers=headers)
+        print(response)
+    
+    elif (tests == 0):
+
+        experiment_monitor_class = ExperimentMonitor()
+        experiment_monitor_result = experiment_monitor_class.monitor_local(experiment_function, experiment_params)
+        file_content = json.dumps(experiment_monitor_result, indent=2)
+        encoded_content = base64.b64encode(file_content.encode("utf-8")).decode("utf-8")
+        payload = {
+            "message": f"Monitor Test 1",  
+            "content": encoded_content,
+            "branch": branch
+        }
+        response = requests.put(url, json=payload, headers=headers)
+        print(response)
+
+
 experiment_params = {"n_bits": 4, "shots":10000}
 
-experiment_monitor_class = ExperimentMonitor()
-experiment_monitor_class.monitor_local(quantum_rng, experiment_params)
-#experiment_monitor_class.monitor_cloud(sts, quantum_rng)
-
+test = automated_test(quantum_rng, experiment_params)
 
