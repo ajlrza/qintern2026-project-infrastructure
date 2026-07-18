@@ -1,17 +1,25 @@
-terraform {
-  required_providers {
-    random = {
-      source  = "hashicorp/random"
-      version = "~> 3.0"
-    }
-  }
-}
+terraform { 
+  required_providers { 
+    aws = { 
+      source  = "hashicorp/aws" 
+      version = "~> 6.0" 
+    } 
+  } 
+} 
 
-resource "random_pet" "hello" {
-  length    = 2
-  separator = "-"
-}
+provider "aws" { 
+  region = "us-east-1" 
+} 
 
-output "hello_world" {
-  value = "Hello, world from Terraform!"
+resource "aws_instance" "experiment_instance" { 
+  ami           = "ami-0c7217cdde317cfec" # Sample ID
+  instance_type = "t2.micro" 
+  
+  tags = { 
+    Environment = "Production" 
+  } 
+} 
+
+output "hello_world" { 
+  value = "Hello, world from Terraform!" 
 }
