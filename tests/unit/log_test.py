@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from braket.circuits import Circuit
 from braket.devices import LocalSimulator
 from src.logger.logger import log_to_repo
+from src.classes import ExperimentMonitor, InfrastructureMonitor
 
 sts = boto3.client(
     'sts',
@@ -28,7 +29,10 @@ def quantum_rng(n_bits, shots=10000):
     return result.measurement_counts
 
 # Test
-experiment_result = quantum_rng(n_bits=4, shots=10000)
+experiment_params = {"n_bits": 4, "shots":10000}
+
+experiment_monitor_class = ExperimentMonitor()
+experiment_result = experiment_monitor_class.monitor_local(quantum_rng, experiment_params)
 
 log = log_to_repo(
     sts_client=sts,

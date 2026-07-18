@@ -1,7 +1,7 @@
 import os, threading, time
-from config.master_config import Config
+from ....config.master_config import Config
 from datetime import datetime, timezone, timedelta
-from monitors.local.local_monitor import experiment_local_monitor
+from ....monitors.local.local_monitor import local_user_monitor
 from botocore.exceptions import ClientError, NoCredentialsError, EndpointConnectionError
 
 def ec2_instance_monitor(infra_monitor_class, experiment_function):
@@ -19,7 +19,7 @@ def ec2_instance_monitor(infra_monitor_class, experiment_function):
              match response:
                   
                   case "Y":
-                       local_monitor = experiment_local_monitor(experiment_function)
+                       local_monitor = local_user_monitor(experiment_function)
                        return local_monitor
                   
                   case "N":
@@ -32,7 +32,7 @@ def ec2_instance_monitor(infra_monitor_class, experiment_function):
              match response:
                   
                   case "Y":
-                       local_monitor = experiment_local_monitor(experiment_function)
+                       local_monitor = local_user_monitor(experiment_function)
                        return local_monitor
                   
                   case "N":
@@ -48,13 +48,13 @@ def ec2_instance_monitor(infra_monitor_class, experiment_function):
                        except NoCredentialsError as E:
                            print(f"{E} has occured, defaulting to local monitor...")
 
-                           local_monitor = experiment_local_monitor(experiment_function)
+                           local_monitor = local_user_monitor(experiment_function)
                            return local_monitor
                        
         except EndpointConnectionError:
              print("Connection error, defaulting to local monitor..")
 
-             local_monitor = experiment_local_monitor(experiment_function)
+             local_monitor = local_user_monitor(experiment_function)
              return local_monitor
         
         if  ec2_instance_description is None:

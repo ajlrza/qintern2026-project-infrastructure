@@ -1,11 +1,11 @@
 from functools import wraps
-import os, time, inspect, boto3
+import os, time, inspect, boto3, sys
 from datetime import datetime, timezone
-from monitors.error_codes import error_codes
-from monitors.local.local_monitor import local_machine_monitor
-from monitors.cloud.braket.braket_monitor import braket_simulator_monitor
+from .monitors.error_codes import error_codes
+from .monitors.local.local_monitor import local_user_monitor
+from .monitors.cloud.braket.braket_monitor import experiment_braket_monitor
 from botocore.exceptions import ClientError, NoCredentialsError, EndpointConnectionError
-from monitors.cloud.ec2.ec2_monitor import ec2_machine_cloud_monitor, ec2_instance_monitor
+from .monitors.cloud.ec2.ec2_monitor import ec2_machine_cloud_monitor, ec2_instance_monitor
 
 class ExperimentMonitor:
 
@@ -29,11 +29,9 @@ class ExperimentMonitor:
         self.start_time = time.strftime("%Y-%m-%d %H:%M:%S")
 
         self.experiment_id = f"QIntern26 Experiment"
-
-        print(f"Region: {self.region_name}")
         print(f"Start Time: {self.start_time}")
     
-    def monitor_local(sts_client: object, experiment_function: object):
+    def monitor_local(self, experiment_function, params: dict):
         """
         Orchestrates modules for local monitoring, acts as the main function to use for local monitoring.
 
@@ -45,7 +43,7 @@ class ExperimentMonitor:
             local_results: Dictionary containing results from the psutil library.
         """
 
-        local_monitor = local_machine_monitor(experiment_function)
+        local_monitor = local_user_monitor(experiment_function, params)
 
         local_results = {}
 
@@ -70,7 +68,7 @@ class ExperimentMonitor:
         experiment_cloud_monitor_ec2 = ec2_machine_cloud_monitor(experiment_function)
         experiment_cloud_ec2_metrics = ec2_instance_monitor(experiment_function)
 
-        experiment_cloud_monitor_braket = braket_simulator_monitor(experiment_function)
+        experiment_cloud_monitor_braket = experiment_braket_monitor(experiment_function)
 
         cloud_results["EC2 Machine Experiment Metrics"] =  experiment_cloud_monitor_ec2
         cloud_results["EC2 Instance Experiment Metrics"] =  experiment_cloud_ec2_metrics
@@ -139,11 +137,6 @@ class InfrastructureMonitor:
                 self.access_key,
                 self.secret_key 
             )
-            self.assumed_role = self.sts_client.assume_role(
-                RoleArn=self.role_arn,
-                RoleSessionName="InstanceMonitor",
-            )
-            self.creds = self.assumed_role["Credentials"]
 
             print(f"Managing Instance: ")
             print("Successfully assumed monitoring EC2 and Braket instance.")
@@ -184,27 +177,21 @@ class InfrastructureMonitor:
                        secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY")    
 
                        try:
-                           new_infra_monitor_instance = infra_monitor_class(access_key, secret_key)
-                           get_instance = new_infra_monitor_instance.ec2_client.describe_instances()
+                           #new_infra_monitor_instance = infra_monitor_class(access_key, secret_key)
+                           #get_instance = new_infra_monitor_instance.ec2_client.describe_instances()
+                           pass
 
                        except NoCredentialsError as E:
                            print(f"{E} has occured, defaulting to local monitor...")
 
-                           local_monitor = monitor_local(experiment_function)
-                           return local_monitor
+                           #local_monitor = local_user_monitor(experiment_function)
+                           #return local_monitor
                        
         except EndpointConnectionError:
              print("Connection error, defaulting to local monitor..")
 
-             local_monitor = monitor_local(experiment_function)
-             return local_monitor
+             #local_monitor = local_user_monitor(experiment_function)
+             #return local_monitor
 
       
-experiment_agent = ExperimentMonitor( 
-    role_arn="arn:aws:iam::000000000000:role/local-mock-role", 
-    region_name="us-east-1"
-    )
-
-print("----EC2 VM MONITOR----")
-experiment_agent.log_to_server(ec2=True)
 

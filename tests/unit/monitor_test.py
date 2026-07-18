@@ -28,13 +28,10 @@ def quantum_rng(n_bits, shots=10000):
     return result.measurement_counts
 
 experiment_result = quantum_rng(n_bits=4, shots=10000)
+experiment_params = {"n_bits": 4, "shots":10000}
 
-experiment_monitor_class = ExperimentMonitor(results=experiment_result)
-experiment_monitor_class.monitor_local(sts, quantum_rng)
-experiment_monitor_class.monitor_cloud(sts, quantum_rng)
+experiment_monitor_class = ExperimentMonitor()
+experiment_monitor_class.monitor_local(quantum_rng, experiment_params)
+#experiment_monitor_class.monitor_cloud(sts, quantum_rng)
 
-infrastructure_monitor_class = InfrastructureMonitor(
-    region_name = os.environ.get("AWS_DEFAULT_REGION"),
-    access_key = os.environ.get("AWS_ACCESS_KEY"),
-    secret_key=os.environ.get("AWS_SECRET_KEY"),
-)
+
