@@ -36,3 +36,17 @@ It contains:
 
 ## Infrastructure
 ![Infrastructure Diagram](assets/Infrastructure.png)
+
+### Terraform ```.gitignore``` File
+```
+**/.terraform/*
+
+*.tfstate
+*.tfstate.*
+
+crash.log
+crash.*.log
+
+*.tfvars
+*.tfvars.json
+```
