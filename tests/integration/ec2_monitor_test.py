@@ -41,7 +41,7 @@ def automated_test(experiment_function, experiment_params=None, tests=0):
     repo = os.environ.get("REPOSITORY_NAME")
 
     datetime_now = datetime.now()
-    path = f"test_logs/monitor_test_{datetime.now()}" 
+    path = f"test_logs/ec2_monitor_test_{datetime.now()}" 
     branch = "main"  
 
     url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}.md"
@@ -62,7 +62,7 @@ def automated_test(experiment_function, experiment_params=None, tests=0):
             
             experiment_monitor = Monitor()
 
-            experiment_monitor_result = experiment_monitor.monitor_cloud(experiment_monitor.config.creds, quantum_rng)
+            experiment_monitor_result = experiment_monitor.monitor_cloud(experiment_monitor.config, quantum_rng)
 
             test_results.append(experiment_monitor_result)
 
@@ -70,7 +70,7 @@ def automated_test(experiment_function, experiment_params=None, tests=0):
         encoded_content = base64.b64encode(file_content.encode("utf-8")).decode("utf-8")
 
         payload = {
-            "message": f"{test_iteration} Monitor Tests",  
+            "message": f"{test_iteration} EC2 Monitor Test/s",  
             "content": encoded_content,
             "branch": branch
         }
@@ -87,7 +87,7 @@ def automated_test(experiment_function, experiment_params=None, tests=0):
         encoded_content = base64.b64encode(file_content.encode("utf-8")).decode("utf-8")
 
         payload = {
-            "message": f"Monitor Test 1",  
+            "message": f"EC2 Monitor Test 1",  
             "content": encoded_content,
             "branch": branch
         }
@@ -95,4 +95,4 @@ def automated_test(experiment_function, experiment_params=None, tests=0):
         print(response)
 
 # Test
-test = automated_test(quantum_rng, experiment_params=None)
+test = automated_test(quantum_rng, experiment_params=None, tests=3)

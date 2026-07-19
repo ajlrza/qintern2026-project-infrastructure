@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 from datetime import datetime
 from braket.circuits import Circuit
 from braket.devices import LocalSimulator
-from src.classes import ExperimentMonitor, InfrastructureMonitor
+from src.classes import Monitor
 
 sts = boto3.client(
     'sts',
@@ -56,7 +56,7 @@ def automated_test(experiment_function, experiment_params, tests=0):
 
             test_iteration += 1
             
-            experiment_monitor_class = ExperimentMonitor()
+            experiment_monitor_class = Monitor()
             experiment_monitor_result = experiment_monitor_class.monitor_local(experiment_function, experiment_params)
             
             test_results.append(experiment_monitor_result)
@@ -73,7 +73,7 @@ def automated_test(experiment_function, experiment_params, tests=0):
     
     elif (tests == 0):
 
-        experiment_monitor_class = ExperimentMonitor()
+        experiment_monitor_class = Monitor()
         experiment_monitor_result = experiment_monitor_class.monitor_local(experiment_function, experiment_params)
         file_content = json.dumps(experiment_monitor_result, indent=2)
         encoded_content = base64.b64encode(file_content.encode("utf-8")).decode("utf-8")

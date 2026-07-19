@@ -48,7 +48,6 @@ class Monitor:
 
         self.experiment_id = f"QIntern26 Experiment"
         print(f"Start Time: {self.start_time}")
-        print(self.config.creds)
     
     def monitor_local(self, experiment_function, params: dict):
         """
