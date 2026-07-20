@@ -1,22 +1,24 @@
 from functools import wraps
-import os, time, inspect, boto3, sys
-from datetime import datetime, timezone
+import os
+import time
+import inspect
+import boto3
+from datetime import datetime
 from src.config.master_config import Config
-from .monitors.error_codes import error_codes
 from .monitors.local.local_monitor import local_user_monitor
-from .monitors.cloud.braket.braket_monitor import experiment_braket_monitor
-from botocore.exceptions import ClientError, NoCredentialsError, EndpointConnectionError
-from .monitors.cloud.ec2.ec2_monitor import ec2_machine_cloud_monitor, ec2_instance_monitor
+from .monitors.cloud.ec2.ec2_monitor import (
+    ec2_machine_cloud_monitor,
+    ec2_instance_monitor,
+)
+
 
 class Monitor:
-
     """
-      Monitors the experiment code ran on the local machine
-      and gathers local-bound metrics using the psutil library
+    Monitors the experiment code ran on the local machine
+    and gathers local-bound metrics using the psutil library
     """
 
-    def __init__(self):    
-
+    def __init__(self):
         """
         Initializes experiment monitor instance, used to wrap and extract params
 
@@ -25,30 +27,34 @@ class Monitor:
 
         """
 
-        self.start_time = datetime.fromtimestamp(time.time()) 
+        self.start_time = datetime.fromtimestamp(time.time())
         self.computer_time = time.time()
         self.start_time = time.strftime("%Y-%m-%d %H:%M:%S")
 
         aws_session = boto3.Session(
             aws_access_key_id=os.environ.get("AWS_ACCESS_KEY", "test"),
             aws_secret_access_key=os.environ.get("AWS_SECRET_KEY", "test"),
-            region_name=os.environ.get("AWS_DEFAULT_REGION", "us-east-1")
+            region_name=os.environ.get("AWS_DEFAULT_REGION", "us-east-1"),
         )
 
-        localstack_url = 'http://localhost:4566'
+        localstack_url = "http://localhost:4566"
 
         self.config = Config(
             creds={
                 "sts_client": aws_session.client("sts", endpoint_url=localstack_url),
-                "cw_client": aws_session.client("cloudwatch", endpoint_url=localstack_url),
+                "cw_client": aws_session.client(
+                    "cloudwatch", endpoint_url=localstack_url
+                ),
                 "ec2_client": aws_session.client("ec2", endpoint_url=localstack_url),
-                "braket_client": aws_session.client("braket", endpoint_url=localstack_url)
+                "braket_client": aws_session.client(
+                    "braket", endpoint_url=localstack_url
+                ),
             }
         )
 
-        self.experiment_id = f"QIntern26 Experiment"
+        self.experiment_id = "QIntern26 Experiment"
         print(f"Start Time: {self.start_time}")
-    
+
     def monitor_local(self, experiment_function, params: dict):
         """
         Orchestrates modules for local monitoring, acts as the main function to use for local monitoring.
@@ -65,11 +71,12 @@ class Monitor:
 
         local_results = {}
 
-        local_results["Local Machine Experiment Metrics"] =  local_monitor
-        
+        local_results["Local Machine Experiment Metrics"] = local_monitor
+        local_results["Parameters"] = params
+
         return local_results
-    
-    def monitor_cloud(self, config, experiment_function: object):
+
+    def monitor_cloud(self, config, experiment_function, params: dict):
         """
         Orchestrates modules for cloud monitoring, acts as the main function to use for cloud monitoring.
 
@@ -86,28 +93,27 @@ class Monitor:
         experiment_cloud_monitor_ec2 = ec2_machine_cloud_monitor(config)
         experiment_cloud_ec2_metrics = ec2_instance_monitor(config, experiment_function)
 
-    #    experiment_cloud_monitor_braket = experiment_braket_monitor(experiment_function)
+        #    experiment_cloud_monitor_braket = experiment_braket_monitor(experiment_function)
 
-        cloud_results["EC2 Machine Experiment Metrics"] =  experiment_cloud_monitor_ec2
-        cloud_results["EC2 Instance Experiment Metrics"] =  experiment_cloud_ec2_metrics
+        cloud_results["EC2 Machine Experiment Metrics"] = experiment_cloud_monitor_ec2
+        cloud_results["EC2 Instance Experiment Metrics"] = experiment_cloud_ec2_metrics
+        cloud_results["Parameters"] = params
 
-       # cloud_results["Braket Experiment Metrics"] =  experiment_cloud_monitor_braket
-        
+        # cloud_results["Braket Experiment Metrics"] =  experiment_cloud_monitor_braket
+
         return cloud_results
 
-    
     @staticmethod
     def __get_params(func):
         """Extracts the parameters passed on the function for logging purposes"""
+
         @wraps(func)
         def wrapper(*args, **kwargs):
 
             sig = inspect.signature(func)
             bound_args = sig.bind(*args, **kwargs)
             params = dict(bound_args.arguments)
-            
-            return params
-        return wrapper
-    
-      
 
+            return params
+
+        return wrapper

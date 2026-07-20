@@ -1,7 +1,7 @@
-import os
 from dataclasses import dataclass, field
 from .credentials_config import CredsConfig
 from .experiment_config import ExpConfig, CircParams, Metrics, Environ, Gates
+
 
 @dataclass
 class Config:

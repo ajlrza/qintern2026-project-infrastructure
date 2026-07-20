@@ -1,72 +1,115 @@
 from dataclasses import asdict
 import braket._sdk as braket_sdk
-import platform, json, base64, os
-from config.master_config import Config
+import platform
+import json
+import base64
+import os
+import requests
+from ..config.master_config import Config
 from datetime import datetime, timezone
-from classes import InfrastructureMonitor, ExperimentMonitor
+from logger.results import Results
 
-def log_to_repo(
-          sts_client: object, 
-          experiment_function, 
-          monitored_results: dict, 
-          notes: str, 
-          benchmark_type: str):
+class Logger:
+    def __init__(
+        self, monitored_results, notes, benchmark_type
+    ):
+        local_results: dict | None  = monitored_results.get("Local Machine Experiment Metrics")
+        cloud_results: dict | None = monitored_results.get("Cloud Machine Data")
+
+        self.config = Config()
+
+        self.experiment_count = 0
+        self.config.exp.experiment_id = "QWorld 2026" + f"00{self.experiment_count}"
+        self.config.exp.benchmark_type = benchmark_type
+        self.config.exp.timestamp = str(datetime.now(timezone.utc).isoformat())
+        self.config.exp.simulator = "LocalSimulator"
+        self.config.exp.notes = notes
+
+        self.config.circ.depth = 0
+        self.config.circ.qubits = 0
+        self.config.circ.shots = 1000
+        self.config.circ.gates.H = 0
+        self.config.circ.gates.CNOT = 0
+        self.config.circ.gates.Others = 0
+
+        self.config.env.braket_sdk_version = braket_sdk.__version__
+        self.config.env.python_version = platform.python_version()
         
-        """Logs the associated data to the GitHub repo."""
+        if cloud_results and "ec2_instance_attributes" in cloud_results:
+            first_instance_key = list(cloud_results["ec2_instance_attributes"].keys())[0]
+            self.config.env.instance_type = cloud_results["ec2_instance_attributes"][first_instance_key].get("Instance", "")
+        else:
+            self.config.env.instance_type = ""
 
-        exp_monitor = ExperimentMonitor()
-        infra_monitor = InfrastructureMonitor("us-east-1")
+        get_experiment_params = {}
 
-        experiment_count += 1
-        exp_monitor.experiment_id += exp_monitor.experiment_id + f"00{experiment_count}"
+        if (local_results == None):
+            get_experiment_params = cloud_results.get("Parameters", {})
+        elif (cloud_results == None):
+            get_experiment_params = local_results.get("Parameters", {})
+        elif (cloud_results != None and local_results != None):
+            get_experiment_params = {
+                "local_monitored_params": local_results.get("Parameters", {}),
+                "cloud_monitored_params": cloud_results.get("Parameters", {})
+            }
 
-        local_results = monitored_results["Local Machine Experiment Metrics"]
-        cloud_results = monitored_results["Cloud Machine Data"]
+        results_dataclass = Results(Config=asdict(self.config), Metrics={})
+        
+        if local_results:
+            results_dataclass.Metrics["Local_Monitor"] = local_results
+        if cloud_results:
+            results_dataclass.Metrics["Cloud_Monitor"] = cloud_results
 
-        config = Config()
+        for key, value in get_experiment_params.items():
 
-        config.creds.sts_client = sts_client
+            if (len(get_experiment_params.keys()) == 1):
+                dict_config = asdict(self.config)
+                excluded = {'creds', 'exp'}
+                final_experiment_log = {k: v for k, v in dict_config.items() if k not in excluded}
+                results_dataclass.Config = final_experiment_log
 
-        config.exp.experiment_id = exp_monitor.experiment_id
-        config.exp.benchmark_type = benchmark_type
-        config.exp.timestamp = datetime.now(timezone.utc).isoformat()
-        config.exp.simulator = "LocalSimulator"
-        config.exp.notes = notes
+                if hasattr(self.config.circ, key):
+                    results_dataclass.Metrics[key] = value
+                elif hasattr(self.config.circ.gates, key):
+                    results_dataclass.Metrics[key] = value
+                    
+            elif (len(get_experiment_params.keys()) == 2):
+                dict_config = asdict(self.config)
+                excluded = {'creds', 'exp'}
+                final_experiment_log = {k: v for k, v in dict_config.items() if k not in excluded}
+                results_dataclass.Config = final_experiment_log
 
-        config.circ.depth = 0
-        config.circ.qubits = 0
-        config.circ.shots = 1000
-        config.circ.gates.H = 0
-        config.circ.gates.CNOT = 0
-        config.circ.gates.Others = 0
+                if hasattr(self.config.circ, key):
+                    results_dataclass.Metrics[key] = value
+                elif hasattr(self.config.circ.gates, key):
+                    results_dataclass.Metrics[key] = value
 
-        config.metric.runtime_seconds = ([local_results, cloud_results] if (local_results and cloud_results) else (local_results or cloud_results))
+        final_payload = asdict(results_dataclass)
 
-        config.env.braket_sdk_version = braket_sdk.__version__
-        config.env.python_version = platform.python_version()
-        config.env.instance_type = get_infra_attr['ec2_instance']['instance_type']
+        token = os.environ.get("PAT_TOKEN")
+        owner = os.environ.get("GITHUB_USERNAME")
+        repo = os.environ.get("REPOSITORY_NAME")
 
-        get_experiment_params = exp_monitor.__get_params(experiment_function)
+        path = f"test_logs/ec2_monitor_test_{datetime.now().isoformat()}"
+        branch = "main"
 
-        final_experiment_log = asdict(config)
+        url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}.md"
 
-        for param, value in get_experiment_params.items():
-            if (param in asdict(config.circ)):
-                asdict(config.exp)['circuit_params'][param] = value
-            else:
-                if (param ==  asdict(config.exp)['circuit_params']['gates']):
-                     asdict(config.exp)['circuit_params']['gates'][param] = value
+        file_content = json.dumps(final_payload, indent=2)
+        encoded_content = base64.b64encode(file_content.encode("utf-8")).decode("utf-8")
 
-
-        repo_url = os.environ.get("REPO_URL")
-        functions_to_run = []
-        functions_to_run.append(("EC2", infra_monitor.monitor_ec2_vm()))
-
-        snapshot = {
-            name: monitor_func for name, monitor_func in functions_to_run
+        payload = {
+            "message": f"Experiment {benchmark_type} EC2 Monitor ",
+            "content": encoded_content,
+            "branch": branch,
         }
 
-        parse = json.dumps(snapshot["EC2"]).encode("utf-8")
-        encode_snapshot = base64.b64encode(parse)
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Accept": "application/vnd.github+json",
+            "X-GitHub-Api-Version": "2022-11-28",
+        }
 
-        return snapshot
+        response = requests.put(url, json=payload, headers=headers, timeout=5)
+        print(response)
+

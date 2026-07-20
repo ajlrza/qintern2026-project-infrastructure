@@ -22,4 +22,4 @@ description = "Python-based Monitor & Log Tool for AWS EC2, Braket, and Local Ma
 readme = "README.md"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src"]
+packages = ["QMonitor"]

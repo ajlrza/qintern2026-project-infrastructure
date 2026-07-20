@@ -1,17 +1,20 @@
 from dataclasses import dataclass, field
 
+
 @dataclass
 class Gates:
     H: int = 0
     CNOT: int = 0
     Others: int = 0
 
+
 @dataclass
 class CircParams:
     qubits: int = 0
     depth: int = 0
     shots: int = 0
-    gates: Gates = field(default_factory=Gates)  # Properly nested
+    gates: Gates = field(default_factory=Gates)  
+
 
 @dataclass
 class Metrics:
@@ -25,11 +28,13 @@ class Metrics:
     runtime_seconds: float = 0.0
     cloud_overhead_seconds: float = 0.0
 
+
 @dataclass
 class Environ:
     braket_sdk_version: str = ""
     python_version: str = ""
     instance_type: str = ""
+
 
 @dataclass
 class ExpConfig:
@@ -39,6 +44,4 @@ class ExpConfig:
     simulator: str = ""
     notes: str = ""
 
-@dataclass
-class CredsConfig:
-    sts_client: object = None
+

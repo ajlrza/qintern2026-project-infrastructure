@@ -1,30 +1,36 @@
-import boto3, os
-import numpy as np
+import boto3
+import os
 from src.classes import Monitor
-import matplotlib.pyplot as plt
 from braket.circuits import Circuit
 from braket.devices import LocalSimulator
 
-ec2_client = boto3.client("ec2")
-
-test_instance = ec2_client.run_instances(
-    ImageId='ami-0123456789abcdef0',
-    MinCount=1,
-    MaxCount=1,
-    InstanceType='t3.micro',
-    MetadataOptions={
-        'HttpTokens': 'required',       
-        'HttpEndpoint': 'enabled',     
-        'HttpPutResponseHopLimit': 2   
-    }
+ec2_client = boto3.client(
+    "ec2",
+    endpoint_url="http://localhost:4566",
+    region_name="us-east-1",
+    aws_access_key_id="test",
+    aws_secret_access_key="test",
 )
 
 sts = boto3.client(
-    'sts',
-    aws_access_key_id=os.environ.get("AWS_ACCESS_KEY"),
-    aws_secret_access_key=os.environ.get("AWS_SECRET_KEY"),
-    region_name=os.environ.get("AWS_DEFAULT_REGION"),
+    "sts",
+    aws_access_key_id="test",
+    aws_secret_access_key="test",
+    region_name="us-east-1",
 )
+
+test_instance = ec2_client.run_instances(
+    ImageId="ami-0123456789abcdef0",
+    MinCount=1,
+    MaxCount=1,
+    InstanceType="t3.micro",
+    MetadataOptions={
+        "HttpTokens": "required",
+        "HttpEndpoint": "enabled",
+        "HttpPutResponseHopLimit": 2,
+    },
+)
+
 
 def quantum_rng(n_bits, shots=10000):
     """
@@ -40,6 +46,7 @@ def quantum_rng(n_bits, shots=10000):
     result = device.run(circuit, shots=shots).result()
 
     return result.measurement_counts
+
 
 experiment_monitor = Monitor()
 experiment_monitor.config.creds.ec2_client = boto3.client(

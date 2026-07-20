@@ -1,17 +1,17 @@
-import boto3, os
-import numpy as np
-import matplotlib.pyplot as plt
+import boto3
+import os
 from braket.circuits import Circuit
 from braket.devices import LocalSimulator
 from src.logger.logger import log_to_repo
-from src.classes import ExperimentMonitor, InfrastructureMonitor
+from src.classes import ExperimentMonitor
 
 sts = boto3.client(
-    'sts',
+    "sts",
     aws_access_key_id=os.environ.get("AWS_ACCESS_KEY"),
     aws_secret_access_key=os.environ.get("AWS_SECRET_KEY"),
     region_name=os.environ.get("AWS_DEFAULT_REGION"),
 )
+
 
 def quantum_rng(n_bits, shots=10000):
     """
@@ -28,16 +28,19 @@ def quantum_rng(n_bits, shots=10000):
 
     return result.measurement_counts
 
+
 # Test
-experiment_params = {"n_bits": 4, "shots":10000}
+experiment_params = {"n_bits": 4, "shots": 10000}
 
 experiment_monitor_class = ExperimentMonitor()
-experiment_result = experiment_monitor_class.monitor_local(quantum_rng, experiment_params)
+experiment_result = experiment_monitor_class.monitor_local(
+    quantum_rng, experiment_params
+)
 
 log = log_to_repo(
     sts_client=sts,
-    experiment_function=quantum_rng, 
-    monitored_results=experiment_result, 
-    notes="Test", 
-    benchmark_type="RNG"
+    experiment_function=quantum_rng,
+    monitored_results=experiment_result,
+    notes="Test",
+    benchmark_type="RNG",
 )
