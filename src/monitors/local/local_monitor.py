@@ -17,11 +17,13 @@ def local_user_monitor(experiment_function: Callable, params: Dict[str, Any]):
 
     while thread.is_alive():
         thread_count = thread_count + 1
-        print("Experiment function is currently running.")
+        print("Experiment function is currently running,.")
+        time.sleep(0.5)
 
-        if psutil.virtual_memory().percent >= 98.00:
+        if monitor_results["Total Local RAM Usage"] >= 98.00:
             print("Out Of Memory Risk...")
             print("Sleeping for 10 seconds..")
+            time.sleep(10)
 
         monitor_results[f"Local CPU Usage: Thread {thread_count}"] = psutil.cpu_percent(
             interval=0.1

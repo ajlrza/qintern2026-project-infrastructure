@@ -1,13 +1,10 @@
-import threading
-import time
-import boto3
-import getpass
+import threading, time, os, boto3, psutil
 from datetime import datetime, timezone, timedelta
 from src.classes import Monitor
 from botocore.exceptions import ClientError, NoCredentialsError, EndpointConnectionError
 
 
-def ec2_instance_monitor(config, experiment_function):
+def ec2_instance_monitor(config, experiment_function, experiment_params):
 
     ec2_instance_description = None
 
@@ -19,44 +16,29 @@ def ec2_instance_monitor(config, experiment_function):
         response = input("Enter Y/N")
 
         if (response == "Y"):
+                
                 local_monitor = Monitor()
-                experiment_params: dict = getpass.getpass(
-                    "Please input the experiment function parameters in dictionary format."
-                )
                 local_monitor_metrics = local_monitor.monitor_local(
                     experiment_function, experiment_params
                 )
 
                 return local_monitor_metrics
+        
         elif (response == "N"):
-                print("Please paste the credentials on the terminal.")
-
-                access_key = getpass.getpass("AWS_ACCESS_KEY: \n")
-                secret_key = getpass.getpass("AWS_SECRET_ACCESS_KEY: \n")
-
+                
                 try:
-                    key_is_empty: bool = (
-                        access_key.strip() == "" or secret_key.strip() == ""
-                    )
-
-                    if key_is_empty:
-                        raise NoCredentialsError()
-
-                    boto3.client(
+                    
+                    cw_new_client = boto3.client(
                         "cloudwatch",
-                        aws_access_key_id=access_key,
-                        aws_secret_access_key=secret_key,
+                        aws_access_key_id=os.environ.get("AWS_ACCESS_KEY"),
+                        aws_secret_access_key=os.environ.get("AWS_SECRET_KEY"),
                         region_name="us-east-1",
                     )
-
 
                 except NoCredentialsError as E:
                     print(f"{E} has occured, defaulting to local monitor...")
 
                     local_monitor = Monitor()
-                    experiment_params: dict = getpass.getpass(
-                        "Please input the experiment function parameters in dictionary format."
-                    )
                     local_monitor_metrics = local_monitor.monitor_local(
                         experiment_function, experiment_params
                     )
@@ -68,44 +50,31 @@ def ec2_instance_monitor(config, experiment_function):
         response = input("Enter Y/N")
 
         if (response == "Y"):
+                
                 local_monitor = Monitor()
-                experiment_params: dict = getpass.getpass(
-                    "Please input the experiment function parameters in dictionary format."
-                )
                 local_monitor_metrics = local_monitor.monitor_local(
                     experiment_function, experiment_params
                 )
 
                 return local_monitor_metrics
+        
         elif (response == "N"):
-                print("Please paste the credentials on the terminal.")
-
-                access_key = getpass.getpass("AWS_ACCESS_KEY: \n")
-                secret_key = getpass.getpass("AWS_SECRET_ACCESS_KEY: \n")
+                
+                print("Defaulting to local monitor..")
 
                 try:
-                    key_is_empty: bool = (
-                        access_key.strip() == "" or secret_key.strip() == ""
-                    )
 
-                    if key_is_empty:
-                        raise NoCredentialsError()
-
-                    boto3.client(
+                    cw_new_client = boto3.client(
                         "cloudwatch",
-                        aws_access_key_id=access_key,
-                        aws_secret_access_key=secret_key,
+                        aws_access_key_id=os.environ.get("AWS_ACCESS_KEY"),
+                        aws_secret_access_key=os.environ.get("AWS_SECRET_KEY"),
                         region_name="us-east-1",
                     )
-
 
                 except NoCredentialsError as E:
                     print(f"{E} has occured, defaulting to local monitor...")
 
                     local_monitor = Monitor()
-                    experiment_params: dict = getpass.getpass(
-                        "Please input the experiment function parameters in dictionary format."
-                    )
                     local_monitor_metrics = local_monitor.monitor_local(
                         experiment_function, experiment_params
                     )
@@ -116,9 +85,6 @@ def ec2_instance_monitor(config, experiment_function):
         print("Connection error, defaulting to local monitor..")
 
         local_monitor = Monitor()
-        experiment_params: dict = getpass.getpass(
-            "Please input the experiment function parameters in dictionary format."
-        )
         local_monitor_metrics = local_monitor.monitor_local(
             experiment_function, experiment_params
         )
@@ -151,7 +117,7 @@ def ec2_instance_monitor(config, experiment_function):
     return ec2_logged_data
 
 
-def ec2_machine_cloud_monitor(config, experiment_function):
+def ec2_machine_cloud_monitor(config, experiment_function, experiment_params):
 
     infra_metrics = [
         "CPUUtilization",
@@ -171,8 +137,6 @@ def ec2_machine_cloud_monitor(config, experiment_function):
     cw_client_instance = config.creds["cw_client"]
 
     try:
-        # Force a lightweight, fast check on CloudWatch client status
-        # Limits payload size to a maximum of 1 dashboard item to stay performant
         cw_client_instance.list_dashboards(PaginationConfig={"MaxItems": 1})
 
     except ClientError:
@@ -180,33 +144,23 @@ def ec2_machine_cloud_monitor(config, experiment_function):
         response = input("Enter Y/N")
 
         if (response == "Y"):
+                
                 local_monitor = Monitor()
-                experiment_params: dict = getpass.getpass(
-                    "Please input the experiment function parameters in dictionary format."
-                )
                 local_monitor_metrics = local_monitor.monitor_local(
                     experiment_function, experiment_params
                 )
 
                 return local_monitor_metrics
+        
         elif (response == "N"):
-                print("Please paste the credentials on the terminal.")
-
-                access_key = getpass.getpass("AWS_ACCESS_KEY: \n")
-                secret_key = getpass.getpass("AWS_SECRET_ACCESS_KEY: \n")
+                print("Defaulting to local monitor..")
 
                 try:
-                    key_is_empty: bool = (
-                        access_key.strip() == "" or secret_key.strip() == ""
-                    )
-
-                    if key_is_empty:
-                        raise NoCredentialsError()
 
                     cw_new_client = boto3.client(
                         "cloudwatch",
-                        aws_access_key_id=access_key,
-                        aws_secret_access_key=secret_key,
+                        aws_access_key_id=os.environ.get("AWS_ACCESS_KEY"),
+                        aws_secret_access_key=os.environ.get("AWS_SECRET_KEY"),
                         region_name="us-east-1",
                     )
 
@@ -216,9 +170,6 @@ def ec2_machine_cloud_monitor(config, experiment_function):
                     print(f"{E} has occured, defaulting to local monitor...")
 
                     local_monitor = Monitor()
-                    experiment_params: dict = getpass.getpass(
-                        "Please input the experiment function parameters in dictionary format."
-                    )
                     local_monitor_metrics = local_monitor.monitor_local(
                         experiment_function, experiment_params
                     )
@@ -230,33 +181,24 @@ def ec2_machine_cloud_monitor(config, experiment_function):
         response = input("Enter Y/N")
 
         if (response == "Y"):
+                
                 local_monitor = Monitor()
-                experiment_params: dict = getpass.getpass(
-                    "Please input the experiment function parameters in dictionary format."
-                )
                 local_monitor_metrics = local_monitor.monitor_local(
                     experiment_function, experiment_params
                 )
 
                 return local_monitor_metrics
+        
         elif (response == "N"):
-                print("Please paste the credentials on the terminal.")
-
-                access_key = getpass.getpass("AWS_ACCESS_KEY: \n")
-                secret_key = getpass.getpass("AWS_SECRET_ACCESS_KEY: \n")
+                
+                print("Defaulting to local monitor..")
 
                 try:
-                    key_is_empty: bool = (
-                        access_key.strip() == "" or secret_key.strip() == ""
-                    )
-
-                    if key_is_empty:
-                        raise NoCredentialsError()
 
                     cw_new_client = boto3.client(
                         "cloudwatch",
-                        aws_access_key_id=access_key,
-                        aws_secret_access_key=secret_key,
+                        aws_access_key_id=os.environ.get("AWS_ACCESS_KEY"),
+                        aws_secret_access_key=os.environ.get("AWS_SECRET_KEY"),
                         region_name="us-east-1",
                     )
 
@@ -266,9 +208,6 @@ def ec2_machine_cloud_monitor(config, experiment_function):
                     print(f"{E} has occured, defaulting to local monitor...")
 
                     local_monitor = Monitor()
-                    experiment_params: dict = getpass.getpass(
-                        "Please input the experiment function parameters in dictionary format."
-                    )
                     local_monitor_metrics = local_monitor.monitor_local(
                         experiment_function, experiment_params
                     )
@@ -279,9 +218,6 @@ def ec2_machine_cloud_monitor(config, experiment_function):
         print("Connection error, defaulting to local monitor..")
 
         local_monitor = Monitor()
-        experiment_params: dict = getpass.getpass(
-            "Please input the experiment function parameters in dictionary format."
-        )
         local_monitor_metrics = local_monitor.monitor_local(
             experiment_function, experiment_params
         )
@@ -289,6 +225,7 @@ def ec2_machine_cloud_monitor(config, experiment_function):
         return local_monitor_metrics
 
     for metric in infra_metrics:
+
         if metric == "mem_used_percent":
             ram_response = cw_client_instance.get_metric_statistics(
                 Namespace="CWAgent",
@@ -371,28 +308,31 @@ def ec2_machine_cloud_monitor(config, experiment_function):
 def experiment_dual_monitor(config, experiment_function, params: dict):
     """Monitors the experiment both locally and in the cloud through ec2, cloudwatch, and braket."""
 
-    Monitor()
-    config.creds["ec2_client"].get_ec2_infrastructure_metrics()
+    infra_metrics = [
+        "CPUUtilization",
+        "mem_used_percent",
+        "NetworkIn",
+        "NetworkOut",
+        "DiskReadOps",
+        "DiskWriteOps",
+    ]
+
+    ec2_ram_metrics = None
+    ram_average = 0
+
+    cw_client_instance = config.creds["cw_client"]
+
     monitor_results = {}
 
     thread = threading.Thread(target=experiment_function, kwargs=params)
     thread.start()
-
-    monitor_results["Cloud Machine Data"] = config.creds[
-        "ec2_client"
-    ].get_ec2_infrastructure_metrics()
-    monitor_results["Total Cloud CPU Usage"] = config.creds[
-        "ec2_client"
-    ].get_ec2_infrastructure_metrics()["CPU_usage"]
-    monitor_results["Total Cloud RAM Usage"] = config.creds[
-        "ec2_client"
-    ].get_ec2_infrastructure_metrics()["RAM_usage"]
 
     thread_count = 0
 
     time.sleep(1)
 
     while thread.is_alive():
+
         thread_count = thread_count + 1
         print("Experiment function is currently running,.")
         time.sleep(0.5)
@@ -402,30 +342,70 @@ def experiment_dual_monitor(config, experiment_function, params: dict):
             print("Sleeping for 10 seconds..")
             time.sleep(10)
 
-        monitor_results["Local Machine Data"][f"Local Machine Data {thread_count}"] = (
-            experiment_monitor_class.__get_metrics()
+        monitor_results[f"Local CPU Usage: Thread {thread_count}"] = psutil.cpu_percent(
+            interval=0.1
         )
-        monitor_results["Total Local CPU Usage"][
-            f"Local Machine Data {thread_count}"
-        ] = ["Local Machine Data"][f"Local Machine Data {thread_count}"][
-            "CPU_usage"
-        ] + [f"Local Machine Data {thread_count}"]["CPU_usage"]
-        monitor_results["Total Local RAM Usage"][
-            f"Local Machine Data {thread_count}"
-        ] = ["Local Machine Data"][f"Local Machine Data {thread_count}"][
-            "RAM_usage"
-        ] + [f"Local Machine Data {thread_count}"]["RAM_usage"]
+        monitor_results[f"Local RAM Usage: Thread {thread_count}"] = (
+            psutil.virtual_memory().percent
+        )
+        monitor_results[f"Local I/O Disk Latency: Thread {thread_count}"] = (
+            psutil.disk_io_counters()
+        )
+        monitor_results[f"Total Local RAM Usage"] = (
+            psutil.virtual_memory().percent
+        ) + monitor_results[f"Local CPU Usage: Thread {thread_count}"]
+
+        for metric in infra_metrics:
+
+            if metric == "mem_used_percent":
+                ec2_ram_metrics = cw_client_instance.get_metric_statistics(
+                    Namespace="CWAgent",
+                    MetricName=metric,
+                    Dimensions=[{"Name": "InstanceId", "Value": "i-0123456789abcdef0"}],
+                    StartTime=str(datetime.now(timezone.utc) - timedelta(minutes=5)),
+                    EndTime=str(datetime.now(timezone.utc)),
+                    Period=300,
+                    Statistics=["Average"],
+                )
+
+                if not ec2_ram_metrics["Datapoints"]:
+                    ec2_ram_metrics["Average"] = 0.0
+                else:
+                    datapoints_count = len(ec2_ram_metrics["Datapoints"])
+                    sum_datapoints = []
+                    for i in range(0, datapoints_count):
+                        sum_datapoints.append(ec2_ram_metrics["Datapoints"][i]["Average"])
+                    ram_average = sum(sum_datapoints) / len(sum_datapoints)
+
+                ec2_ram_metrics["RAM Summed Average"] = ram_average
+
+                monitor_results["EC2 Instance Ram Usage"] = ec2_ram_metrics
+
+            average = 0
+            ec2_metrics = cw_client_instance.get_metric_statistics(
+                Namespace="AWS/EC2",
+                MetricName=metric,
+                Dimensions=[{"Name": "InstanceId", "Value": "ami-0123456789abcdef0"}],
+                StartTime=str(datetime.now(timezone.utc) - timedelta(minutes=5)),
+                EndTime=str(datetime.now(timezone.utc)),
+                Period=300,
+                Statistics=["Average"],
+            )
+
+            if not ec2_metrics["Datapoints"]:
+                ["Average"] = 0.0
+
+            else:
+                datapoints_count = len(ec2_metrics["Datapoints"])
+                sum_datapoints = []
+                for i in range(0, datapoints_count):
+                    sum_datapoints.append(ec2_metrics["Datapoints"][i]["Average"])
+                average = sum(sum_datapoints) / len(sum_datapoints)
+
+            ec2_metrics[f"${metric} Summed Average"] = average
+
+            monitor_results[f"EC2 Instance Metrics Set {thread_count}"] = ec2_metrics
 
     thread.join()
-
-    monitor_results["Cloud Machine Data"] = config.creds[
-        "ec2_client"
-    ].get_ec2_infrastructure_metrics()
-    monitor_results["Total Cloud CPU Usage"] = config.creds[
-        "ec2_client"
-    ].get_ec2_infrastructure_metrics()["CPU_usage"]
-    monitor_results["Total Cloud RAM Usage"] = config.creds[
-        "ec2_client"
-    ].get_ec2_infrastructure_metrics()["RAM_usage"]
 
     return monitor_results
