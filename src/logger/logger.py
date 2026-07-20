@@ -1,3 +1,4 @@
+# logger.py
 from dataclasses import asdict
 import braket._sdk as braket_sdk
 import platform
@@ -5,18 +6,19 @@ import json
 import base64
 import os
 import requests
-from ..config.master_config import Config
+from QMonitor.config.master_config import Config
 from datetime import datetime, timezone
-from logger.results import Results
+from QMonitor.results import Results
 
 class Logger:
     def __init__(
         self, monitored_results, notes, benchmark_type
     ):
-        local_results: dict | None  = monitored_results.get("Local Machine Experiment Metrics")
-        cloud_results: dict | None = monitored_results.get("Cloud Machine Data")
-
+        self.local_results: dict | None  = monitored_results.get("Local Machine Experiment Metrics")
+        self.cloud_results: dict | None = monitored_results.get("Cloud Machine Data")
+        
         self.config = Config()
+        self.benchmark_type = benchmark_type
 
         self.experiment_count = 0
         self.config.exp.experiment_id = "QWorld 2026" + f"00{self.experiment_count}"
@@ -34,34 +36,34 @@ class Logger:
 
         self.config.env.braket_sdk_version = braket_sdk.__version__
         self.config.env.python_version = platform.python_version()
-        
-        if cloud_results and "ec2_instance_attributes" in cloud_results:
-            first_instance_key = list(cloud_results["ec2_instance_attributes"].keys())[0]
-            self.config.env.instance_type = cloud_results["ec2_instance_attributes"][first_instance_key].get("Instance", "")
+
+    def Log(self):
+        if self.cloud_results and "ec2_instance_attributes" in self.cloud_results:
+            first_instance_key = list(self.cloud_results["ec2_instance_attributes"].keys())[0]
+            self.config.env.instance_type = self.cloud_results["ec2_instance_attributes"][first_instance_key].get("Instance", "")
         else:
             self.config.env.instance_type = ""
 
         get_experiment_params = {}
 
-        if (local_results == None):
-            get_experiment_params = cloud_results.get("Parameters", {})
-        elif (cloud_results == None):
-            get_experiment_params = local_results.get("Parameters", {})
-        elif (cloud_results != None and local_results != None):
+        if (self.local_results == None):
+            get_experiment_params = self.cloud_results.get("Parameters", {})
+        elif (self.cloud_results == None):
+            get_experiment_params = self.local_results.get("Parameters", {})
+        elif (self.cloud_results != None and self.local_results != None):
             get_experiment_params = {
-                "local_monitored_params": local_results.get("Parameters", {}),
-                "cloud_monitored_params": cloud_results.get("Parameters", {})
+                "local_monitored_params": self.local_results.get("Parameters", {}),
+                "cloud_monitored_params": self.cloud_results.get("Parameters", {})
             }
 
         results_dataclass = Results(Config=asdict(self.config), Metrics={})
         
-        if local_results:
-            results_dataclass.Metrics["Local_Monitor"] = local_results
-        if cloud_results:
-            results_dataclass.Metrics["Cloud_Monitor"] = cloud_results
+        if self.local_results:
+            results_dataclass.Metrics["Local_Monitor"] = self.local_results
+        if self.cloud_results:
+            results_dataclass.Metrics["Cloud_Monitor"] = self.cloud_results
 
         for key, value in get_experiment_params.items():
-
             if (len(get_experiment_params.keys()) == 1):
                 dict_config = asdict(self.config)
                 excluded = {'creds', 'exp'}
@@ -99,7 +101,7 @@ class Logger:
         encoded_content = base64.b64encode(file_content.encode("utf-8")).decode("utf-8")
 
         payload = {
-            "message": f"Experiment {benchmark_type} EC2 Monitor ",
+            "message": f"Experiment {self.benchmark_type} EC2 Monitor ",
             "content": encoded_content,
             "branch": branch,
         }
@@ -112,4 +114,3 @@ class Logger:
 
         response = requests.put(url, json=payload, headers=headers, timeout=5)
         print(response)
-

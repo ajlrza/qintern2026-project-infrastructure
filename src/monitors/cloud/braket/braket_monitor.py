@@ -1,12 +1,10 @@
-import boto3
-import getpass
-from src.classes import Monitor
+# braket_monitor.py
+import boto3, os
+from QMonitor.classes import Monitor
 from braket.aws import AwsSession
 from botocore.exceptions import ClientError, NoCredentialsError, EndpointConnectionError
 
-
-def experiment_braket_monitor(config, experiment_function, run_result):
-
+def experiment_braket_monitor(config, experiment_function, run_result, experiment_params):
     device = None
 
     try:
@@ -18,47 +16,24 @@ def experiment_braket_monitor(config, experiment_function, run_result):
 
         if (response == "Y"):
                 local_monitor = Monitor()
-                experiment_params: dict = getpass.getpass(
-                    "Please input the experiment function parameters in dictionary format."
-                )
                 local_monitor_metrics = local_monitor.monitor_local(
                     experiment_function, experiment_params
                 )
-
                 return local_monitor_metrics
         elif (response == "N"):
-                print("Please paste the credentials on the terminal.")
-
-                access_key = getpass.getpass("AWS_ACCESS_KEY: \n")
-                secret_key = getpass.getpass("AWS_SECRET_ACCESS_KEY: \n")
-
                 try:
-                    key_is_empty: bool = (
-                        access_key.strip() == "" or secret_key.strip() == ""
-                    )
-
-                    if key_is_empty:
-                        raise NoCredentialsError()
-
-                    boto3.client(
+                    cw_new_client = boto3.client(
                         "cloudwatch",
-                        aws_access_key_id=access_key,
-                        aws_secret_access_key=secret_key,
+                        aws_access_key_id=os.environ.get("AWS_ACCESS_KEY"),
+                        aws_secret_access_key=os.environ.get("AWS_SECRET_KEY"),
                         region_name="us-east-1",
                     )
-
-
                 except NoCredentialsError as E:
                     print(f"{E} has occured, defaulting to local monitor...")
-
                     local_monitor = Monitor()
-                    experiment_params: dict = getpass.getpass(
-                        "Please input the experiment function parameters in dictionary format."
-                    )
                     local_monitor_metrics = local_monitor.monitor_local(
                         experiment_function, experiment_params
                     )
-
                     return local_monitor_metrics
 
     except NoCredentialsError:
@@ -67,60 +42,32 @@ def experiment_braket_monitor(config, experiment_function, run_result):
 
         if (response == "Y"):
                 local_monitor = Monitor()
-                experiment_params: dict = getpass.getpass(
-                    "Please input the experiment function parameters in dictionary format."
-                )
                 local_monitor_metrics = local_monitor.monitor_local(
                     experiment_function, experiment_params
                 )
-
                 return local_monitor_metrics
         elif (response == "N"):
-                print("Please paste the credentials on the terminal.")
-
-                access_key = getpass.getpass("AWS_ACCESS_KEY: \n")
-                secret_key = getpass.getpass("AWS_SECRET_ACCESS_KEY: \n")
-
                 try:
-                    key_is_empty: bool = (
-                        access_key.strip() == "" or secret_key.strip() == ""
-                    )
-
-                    if key_is_empty:
-                        raise NoCredentialsError()
-
-                    boto3.client(
+                    cw_new_client = boto3.client(
                         "cloudwatch",
-                        aws_access_key_id=access_key,
-                        aws_secret_access_key=secret_key,
+                        aws_access_key_id=os.environ.get("AWS_ACCESS_KEY"),
+                        aws_secret_access_key=os.environ.get("AWS_SECRET_KEY"),
                         region_name="us-east-1",
                     )
-
-
                 except NoCredentialsError as E:
                     print(f"{E} has occured, defaulting to local monitor...")
-
                     local_monitor = Monitor()
-                    experiment_params: dict = getpass.getpass(
-                        "Please input the experiment function parameters in dictionary format."
-                    )
                     local_monitor_metrics = local_monitor.monitor_local(
                         experiment_function, experiment_params
                     )
-
                     return local_monitor_metrics
 
     except EndpointConnectionError:
         print("Connection error, defaulting to local monitor..")
-
         local_monitor = Monitor()
-        experiment_params: dict = getpass.getpass(
-            "Please input the experiment function parameters in dictionary format."
-        )
         local_monitor_metrics = local_monitor.monitor_local(
             experiment_function, experiment_params
         )
-
         return local_monitor_metrics
 
     usage_results = {}
@@ -169,18 +116,14 @@ def experiment_braket_monitor(config, experiment_function, run_result):
         limit["spendingLimitArn"]
         limit["deviceArn"]
         limit["createdAt"]
-
         start_time = limit["timePeriod"]["startAt"]
         end_time = limit["timePeriod"]["endAt"]
-
         max_budget = float(limit["spendingLimit"])
         queued_cost = float(limit["queuedSpend"])
         actual_spent = float(limit["totalSpend"])
-
         remaining_budget = max_budget - (actual_spent + queued_cost)
         if remaining_budget <= max_budget - 100:
             braket_usage["spendingLimits"]["Warning"] = True
-
         braket_usage["trackingPeriod"] = (start_time, end_time)
 
     usage_results["Braket_usage"] = braket_usage

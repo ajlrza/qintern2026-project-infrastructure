@@ -4,10 +4,7 @@ import time
 from typing import Callable, Any, Dict
 from datetime import datetime, timezone
 
-
 def local_user_monitor(experiment_function: Callable, params: Dict[str, Any]):
-    """Calculates system utilization and latency in the local machine."""
-
     monitor_results = {}
     thread_count = 0
     time.sleep(1)
@@ -20,7 +17,7 @@ def local_user_monitor(experiment_function: Callable, params: Dict[str, Any]):
         print("Experiment function is currently running,.")
         time.sleep(0.5)
 
-        if monitor_results["Total Local RAM Usage"] >= 98.00:
+        if monitor_results.get("Total Local RAM Usage", 0.0) >= 98.00:
             print("Out Of Memory Risk...")
             print("Sleeping for 10 seconds..")
             time.sleep(10)
