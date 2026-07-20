@@ -1,18 +1,13 @@
-from dataclasses import asdict
+from dataclasses import asdict, fields
 import braket._sdk as braket_sdk
-import platform
-import json
-import base64
-import os
-import uuid
-import requests
+import platform, json, base64, os, uuid, requests
 from QMonitor.config.master_config import Config
 from datetime import datetime, timezone
 from QMonitor.results import Results
 
 class Logger:
     def __init__(
-        self, monitored_results, notes, benchmark_type
+        self, monitored_results, notes, simulator_name, benchmark_type
     ):
         self.local_results = monitored_results if "Local Machine Experiment Metrics" in monitored_results else None
         self.cloud_results = monitored_results if "EC2 Instance Experiment Metrics" in monitored_results else None
@@ -23,18 +18,14 @@ class Logger:
         self.config.exp.experiment_id = f"QWorld_2026_{uuid.uuid4().hex[:8]}"
         self.config.exp.benchmark_type = benchmark_type
         self.config.exp.timestamp = str(datetime.now(timezone.utc).isoformat())
-        self.config.exp.simulator = "LocalSimulator"
+        self.config.exp.simulator = simulator_name
         self.config.exp.notes = notes
-
-        self.config.circ.depth = 0
-        self.config.circ.qubits = 0
-        self.config.circ.shots = 1000
-        self.config.circ.gates.H = 0
-        self.config.circ.gates.CNOT = 0
-        self.config.circ.gates.Others = 0
 
         self.config.env.braket_sdk_version = braket_sdk.__version__
         self.config.env.python_version = platform.python_version()
+
+    def get_fields(self, dataclass_obj):
+        return {f.name for f in fields(dataclass_obj)}
 
     def Log(self):
         if self.cloud_results and "EC2 Instance Experiment Metrics" in self.cloud_results and "ec2_instance_attributes" in self.cloud_results["EC2 Instance Experiment Metrics"]:
@@ -54,16 +45,27 @@ class Logger:
         if self.cloud_results:
             results_dataclass.Metrics["Cloud_Monitor"] = self.cloud_results
 
+        for key, value in get_experiment_params.items():
+
+            if key in self.get_fields(self.config.gates):
+                setattr(self.config.gates, key, value)
+                
+            elif key in self.get_fields(self.config.metric):
+                setattr(self.config.metric, key, value)
+                
+            elif key in self.get_fields(self.config.env):
+                setattr(self.config.env, key, value)
+                
+            elif key in self.get_fields(self.config.circ):
+                setattr(self.config.circ, key, value)
+                
+            else:
+                self.config.gates.Others[key] = value
+
         dict_config = asdict(self.config)
-        excluded = {'creds', 'exp'}
+        excluded = {'creds'}
         final_experiment_log = {k: v for k, v in dict_config.items() if k not in excluded}
         results_dataclass.Config = final_experiment_log
-
-        for key, value in get_experiment_params.items():
-            if hasattr(self.config.circ, key):
-                results_dataclass.Metrics[key] = value
-            elif hasattr(self.config.circ.gates, key):
-                results_dataclass.Metrics[key] = value
 
         final_payload = asdict(results_dataclass)
 
@@ -74,7 +76,7 @@ class Logger:
         path = f"test_logs/ec2_monitor_test_{datetime.now().isoformat()}"
         branch = "main"
 
-        url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}.md"
+        url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}.json"
 
         file_content = json.dumps(final_payload, indent=2)
         encoded_content = base64.b64encode(file_content.encode("utf-8")).decode("utf-8")

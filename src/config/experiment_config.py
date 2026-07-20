@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 class Gates:
     H: int = 0
     CNOT: int = 0
-    Others: int = 0
+    Others: dict = field(default_factory=dict)
 
 
 @dataclass
