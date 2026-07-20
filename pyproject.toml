@@ -10,7 +10,8 @@ dependencies = [
     "amazon-braket-sdk",
     "boto3",
     "botocore",
-    "psutil"
+    "psutil",
+    "requests"
 ]
 authors = [
   {name = "Anjelo Laroza", email = "larozaanjelo@gmail.com"},
@@ -20,6 +21,14 @@ maintainers = [
 ]
 description = "Python-based Monitor & Log Tool for AWS EC2, Braket, and Local Machine."
 readme = "README.md"
+license = {text = "MIT"}
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Physics"
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["QMonitor"]
