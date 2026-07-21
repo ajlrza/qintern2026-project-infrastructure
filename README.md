@@ -84,13 +84,6 @@ AWS_ACCESS_KEY = os.environ.get('AWS_ACCESS_KEY_ID')
 AWS_SECRET_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY')
 AWS_REGION = 'us-east-1'
 
-sts = boto3.client(
-    'sts',
-    aws_access_key_id=AWS_ACCESS_KEY,
-    aws_secret_access_key=AWS_SECRET_KEY,
-    region_name=AWS_REGION
-)
-
 # Experiment Setup
 def quantum_rng(n_bits, shots=10000):
     """
