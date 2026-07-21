@@ -37,8 +37,8 @@ It contains:
 ## Infrastructure
 ![Infrastructure Diagram](assets/Infrastructure.png)
 
-### Terraform ```.gitignore``` File
-```
+### Terraform `.gitignore` File
+```text
 **/.terraform/*
 
 *.tfstate
@@ -77,7 +77,7 @@ pip install git+[https://github.com/ajlrza/qintern2026-project-infrastructure.gi
 import os
 import boto3
 from QMonitor.classes import Monitor
-from QMonitor.logger import log_to_repo
+from QMonitor.logger import Logger
 
 # AWS Setup (Pre-existing in your notebook) 
 AWS_ACCESS_KEY = os.environ.get('AWS_ACCESS_KEY_ID')
@@ -100,7 +100,7 @@ def quantum_rng(n_bits, shots=10000):
     # Dummy return for example structure
     return {'1010': 668, '1111': 651}
 
-#  QMonitor Integration Workflow
+# QMonitor Integration Workflow
 
 # Step 1: Initialize the Monitor
 experiment_monitor = Monitor()
@@ -110,50 +110,45 @@ experiment_params = {
     "n_bits": 4, 
     "shots": 10000
 }
-
-# Step 3: Execute and Monitor
-# Pass the function object (without calling it) and its parameters
 ```
+
 ## LOCAL MONITOR
 ```python
-local_metrics = experiment_monitor.monitor_local(quantum_rng, experiment_params)
+# Step 3: Execute and Monitor (Local)
+local_metrics = experiment_monitor.monitor_local(quantum_rng, **experiment_params)
 
 print("Monitoring Complete. Results:", local_metrics)
+
 # Step 4: Log Results to GitHub (Local Version)
-log_to_repo(
-    sts_client=sts,
-    experiment_function=quantum_rng,
-    monitored_results={
-        "Cloud Machine Data": None,                
-        "Local Machine Experiment Metrics": local_metrics
-    },
-    simulator_name="LocalSimulator",
+logger = Logger(
+    monitored_results=local_metrics,
     notes="Local QRNG benchmark testing.",
+    simulator_name="LocalSimulator",
     benchmark_type="QRNG"
 )
+logger.Log()
 ```
+
 ## CLOUD/AWS MONITOR
 ```python
+# Step 3: Execute and Monitor (Cloud)
 cloud_metrics = experiment_monitor.monitor_cloud(
-    config=experiment_monitor.config, 
-    experiment_function=quantum_rng
+    experiment_monitor.config, 
+    quantum_rng,
+    **experiment_params
 )
 
 print("Monitoring Complete. Results:", cloud_metrics)
 
-# Step 4: Log Results to GitHub (AWS/CLoud Version)
-log_to_repo(
-    sts_client=sts,
-    experiment_function=quantum_rng,
-    monitored_results={
-        "Cloud Machine Data": cloud_metrics,
-        "Local Machine Experiment Metrics": None
-    },
-    simulator_name="SV1",
+# Step 4: Log Results to GitHub (AWS/Cloud Version)
+logger = Logger(
+    monitored_results=cloud_metrics,
     notes="Cloud QRNG benchmark testing on AWS infrastructure.",
+    simulator_name="SV1",
     benchmark_type="QRNG"
 )
+logger.Log()
 ```
 
-Note on Cloud Monitoring: 
-If monitor_cloud detects missing or invalid AWS credentials, it will trigger an interactive prompt in your terminal asking if you would like to switch to local monitoring or input credentials manually. Ensure your AWS_ACCESS_KEY and AWS_SECRET_KEY are exported in your environment to ensure a seamless automated run.
+**Note on Cloud Monitoring Fallback:** 
+If `monitor_cloud` detects missing or invalid AWS credentials, it will no longer crash or trigger interactive prompts. Instead, it will automatically and seamlessly fall back to executing a single local monitoring session, ensuring your experiment and logs are safely completed without redundant runtime.

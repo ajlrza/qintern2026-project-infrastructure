@@ -1,15 +1,17 @@
 # QMonitor Documentation
 
-The following are the available modules from the QMonitor Package
+The following are the available modules from the QMonitor Package:
 
 * monitors
-* loggers
+* logger
 * config
+
+---
 
 # Monitors
 
 ### `local_user_monitor()` **QMonitor.src.monitors.local.local_monitor.py**
-> Extracts local machine hardware metrics through ```psutil``` and ```threading``` libraries.
+> Extracts local machine hardware metrics through the `psutil` and `threading` libraries.
 
 #### Function Parameters
 
@@ -22,26 +24,10 @@ The following are the available modules from the QMonitor Package
 
 | Type | Description |
 | :--- | :--- |
-| `Dict` | Local machine metrics including: CPU usage, RAM usage, I/O disk latency |
-
-Example Output
-```json
-{
-  "Local CPU Usage: Thread 1": 14.5,
-  "Local RAM Usage: Thread 1": 62.3,
-  "Local I/O Disk Latency: Thread 1": "sdiskio(read_count=874312, write_count=349811, read_bytes=4294967296, write_bytes=1073741824, read_time=14502, write_time=3910, read_merged_count=12, write_merged_count=84, busy_time=18491)",
-  "Local CPU Usage: Thread 2": 22.1,
-  "Local RAM Usage: Thread 2": 63.8,
-  "Local I/O Disk Latency: Thread 2": "sdiskio(read_count=874350, write_count=349900, read_bytes=4295967296, write_bytes=1074741824, read_time=14510, write_time=3915, read_merged_count=12, write_merged_count=84, busy_time=18500)",
-  "Local CPU Usage: Thread 3": 18.3,
-  "Local RAM Usage: Thread 3": 64.1,
-  "Local I/O Disk Latency: Thread 3": "sdiskio(read_count=874400, write_count=350100, read_bytes=4296967296, write_bytes=1075741824, read_time=14520, write_time=3925, read_merged_count=12, write_merged_count=84, busy_time=18520)",
-  "Datetime": "2026-07-21 12:11:44.123456+00:00"
-}
-```
+| `Dict` | Local machine metrics including: CPU usage, RAM usage, and I/O disk latency. |
 
 ### `ec2_instance_monitor()` **QMonitor.src.monitors.cloud.ec2.ec2_monitor.py**
-> Extracts EC2 instance basic metrics through ```AWS Boto3``` EC2 client.
+> Extracts basic EC2 instance metrics through the AWS Boto3 EC2 client.
 
 #### Function Parameters
 
@@ -49,106 +35,16 @@ Example Output
 | :--- | :--- | :--- | :--- |
 | `config` | `Object` | Yes | Initiated config dataclass for centralized credential management. |
 | `experiment_function` | `Callable` | Yes | Callable and uninstantiated experiment function. |
-| `params` | `Dict[str, Any]` | Yes | Experiment function parameters passed from helper function. |
+| `experiment_params` | `Dict[str, Any]` | Yes | Experiment function parameters passed from helper function. |
 
 #### Return Value
 
 | Type | Description |
 | :--- | :--- |
-| `Dict` | EC2 instance infrastructure and usage metrics including: CPU Utilization, Memory Used Percentage, Network I/O, Disk I/O |
-
-Example Output
-```json
-{
-  "usage_metrics": {
-    "EC2_usage": {
-      "instance_id": "i-0123456789abcdef0",
-      "instance_type": "t3.xlarge",
-      "time_used": "3 days, 14:22:05.819201"
-    }
-  },
-  "infrastructure_metrics": [
-    {
-      "Label": "mem_used_percent",
-      "Datapoints": [
-        {
-          "Timestamp": "2026-07-21T12:13:00Z",
-          "Average": 48.35,
-          "Unit": "Percent"
-        }
-      ],
-      "ResponseMetadata": {
-        "HTTPStatusCode": 200,
-        "HTTPHeaders": { ... }
-      },
-      "RAM Summed Average": 48.35
-    },
-    {
-      "Label": "CPUUtilization",
-      "Datapoints": [
-        {
-          "Timestamp": "2026-07-21T12:13:00Z",
-          "Average": 12.4,
-          "Unit": "Percent"
-        }
-      ],
-      "ResponseMetadata": { ... },
-      "CPUUtilization Summed Average": 12.4
-    },
-    {
-      "Label": "NetworkIn",
-      "Datapoints": [
-        {
-          "Timestamp": "2026-07-21T12:13:00Z",
-          "Average": 1048576.0,
-          "Unit": "Bytes"
-        }
-      ],
-      "ResponseMetadata": { ... },
-      "NetworkIn Summed Average": 1048576.0
-    },
-    {
-      "Label": "NetworkOut",
-      "Datapoints": [
-        {
-          "Timestamp": "2026-07-21T12:13:00Z",
-          "Average": 524288.0,
-          "Unit": "Bytes"
-        }
-      ],
-      "ResponseMetadata": { ... },
-      "NetworkOut Summed Average": 524288.0
-    },
-    {
-      "Label": "DiskReadOps",
-      "Datapoints": [
-        {
-          "Timestamp": "2026-07-21T12:13:00Z",
-          "Average": 150.0,
-          "Unit": "Count"
-        }
-      ],
-      "ResponseMetadata": { ... },
-      "DiskReadOps Summed Average": 150.0
-    },
-    {
-      "Label": "DiskWriteOps",
-      "Datapoints": [
-        {
-          "Timestamp": "2026-07-21T12:13:00Z",
-          "Average": 42.0,
-          "Unit": "Count"
-        }
-      ],
-      "ResponseMetadata": { ... },
-      "DiskWriteOps Summed Average": 42.0
-    }
-  ]
-}
-```
+| `Dict` | Nested dictionary containing instance details and hardware specs (vCPUs, Memory, GPU). |
 
 ### `ec2_machine_cloud_monitor()` **QMonitor.src.monitors.cloud.ec2.ec2_monitor.py**
-> Extracts EC2 instance infrastructure metrics (CPU, RAM, Network, Disk) and compute time usage through the `AWS Boto3` CloudWatch and EC2 clients.
+> Extracts EC2 instance infrastructure metrics (CPU, RAM, Network, Disk) and compute time usage through the AWS Boto3 CloudWatch and EC2 clients.
 
 #### Function Parameters
 
@@ -164,118 +60,30 @@ Example Output
 | :--- | :--- |
 | `Dict` | Nested dictionary containing `usage_metrics` (instance ID, type, and total compute time used) and `infrastructure_metrics` (summed averages of CloudWatch data points over a 5-minute period). |
 
-**Example Output**
-```json
-{
-  "usage_metrics": {
-    "EC2_usage": {
-      "instance_id": "i-0123456789abcdef0",
-      "instance_type": "t3.xlarge",
-      "time_used": "3 days, 14:22:05.819201"
-    }
-  },
-  "infrastructure_metrics": [
-    {
-      "Label": "mem_used_percent",
-      "Datapoints": [
-        {
-          "Timestamp": "2026-07-21T12:13:00Z",
-          "Average": 48.35,
-          "Unit": "Percent"
-        }
-      ],
-      "ResponseMetadata": {
-        "HTTPStatusCode": 200,
-        "HTTPHeaders": { }
-      },
-      "RAM Summed Average": 48.35
-    },
-    {
-      "Label": "CPUUtilization",
-      "Datapoints": [
-        {
-          "Timestamp": "2026-07-21T12:13:00Z",
-          "Average": 12.4,
-          "Unit": "Percent"
-        }
-      ],
-      "ResponseMetadata": { },
-      "CPUUtilization Summed Average": 12.4
-    },
-    {
-      "Label": "NetworkIn",
-      "Datapoints": [
-        {
-          "Timestamp": "2026-07-21T12:13:00Z",
-          "Average": 1048576.0,
-          "Unit": "Bytes"
-        }
-      ],
-      "ResponseMetadata": { },
-      "NetworkIn Summed Average": 1048576.0
-    },
-    {
-      "Label": "NetworkOut",
-      "Datapoints": [
-        {
-          "Timestamp": "2026-07-21T12:13:00Z",
-          "Average": 524288.0,
-          "Unit": "Bytes"
-        }
-      ],
-      "ResponseMetadata": { },
-      "NetworkOut Summed Average":
-```
-
 ### `experiment_braket_monitor()` **QMonitor.src.monitors.cloud.braket.braket_monitor.py**
-> Executes a quantum experiment on AWS Braket in a threaded environment, extracting task execution details and account spending limit metrics using the `AWS Boto3` Braket client.
+> Connects to AWS Braket via Boto3 to track task execution details and monitor account spending limits against live tasks.
 
 #### Function Parameters
 
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
 | `config` | `Object` | Yes | Initiated config dataclass containing the Boto3 Braket client. |
-| `experiment_function` | `Callable` | Yes | Callable and uninstantiated experiment function to be threaded. |
+| `experiment_function` | `Callable` | Yes | Callable and uninstantiated experiment function. |
 | `experiment_params` | `Dict[str, Any]` | Yes | Experiment function parameters passed from helper function. |
+| `run_result` | `Any` | Yes | The actual object/response returned by the quantum experiment thread. |
 
 #### Return Value
 
 | Type | Description |
 | :--- | :--- |
-| `Dict` | Dictionary containing AWS Braket infrastructure task data (Job/Task ARNs) and usage metrics (Remaining budget, actual spent, tracking periods). |
+| `Dict` | Dictionary containing AWS Braket infrastructure task data (Job/Task ARNs) and usage metrics (remaining budget, actual spent, tracking periods). |
 
-**Example Output**
-```json
-{
-  "Braket Infrastructure Metrics": {
-    "get_quantum_task": {
-      "quantumTaskArn": "arn:aws:braket:us-east-1:123456789012:quantum-task/abc123xx-...",
-      "status": "COMPLETED",
-      "deviceArn": "arn:aws:braket:::device/qpu/rigetti/Aspen-M-3"
-    },
-    "search_quantum_tasks": {
-      "quantumTasks": [ ... ]
-    },
-    "get_job": {
-      "jobArn": "arn:aws:braket:us-east-1:123456789012:job/invalid-job-for-task",
-      "status": "FAILED"
-    }
-  },
-  "Braket Usage Metrics": {
-    "spending_limit": "arn:aws:braket:us-east-1:123456789012:spending-limit/...",
-    "device_arn": "arn:aws:braket:::device/qpu/rigetti/Aspen-M-3",
-    "created_at": "2026-07-21 12:15:00+00:00",
-    "remaining_budget": 85.50,
-    "Warning": true
-  }
-}
-```
 ---
 
 # Main Orchestrator
 
 ### `Monitor` **QMonitor.classes.py**
-> Centralized wrapper class that initializes Boto3 sessions/clients (STS, CloudWatch, EC2, Braket) and acts as the main entry point to trigger either local or cloud monitoring workflows.
+> Centralized wrapper class that initializes Boto3 sessions/clients (STS, CloudWatch, EC2, Braket) and acts as the main entry point to trigger either local or cloud monitoring workflows, preventing double executions.
 
 #### Class Initialization Parameters
 
@@ -286,21 +94,21 @@ Example Output
 | `region_name` | `str` | No | AWS Region. Defaults to `us-east-1`. |
 
 #### Core Methods
-*   **`monitor_local(experiment_function)`**: Extracts wrapped arguments and invokes `local_user_monitor`. Returns a dictionary of `"Local Machine Experiment Metrics"`.
-*   **`monitor_cloud(config, experiment_function)`**: Extracts wrapped arguments and invokes EC2 and Braket cloud monitors concurrently. Returns a dictionary of `"EC2 Machine Experiment Metrics"` and `"EC2 Instance Experiment Metrics"`.
+*   **`monitor_local(experiment_function, *args, **kwargs)`**: Binds kwargs, extracts arguments, and invokes `local_user_monitor`. Returns a dictionary containing `"Local Machine Experiment Metrics"` and `"Parameters"`.
+*   **`monitor_cloud(config, experiment_function, *args, **kwargs)`**: Runs the quantum experiment strictly once within a thread, then passes the results concurrently to EC2 and Braket cloud monitors. Handles AWS fallback gracefully. Returns a dictionary containing `"EC2 Machine Experiment Metrics"`, `"EC2 Instance Experiment Metrics"`, `"Braket Experiment Metrics"`, and `"Parameters"`.
 
 ---
 
-# Loggers
+# Logger
 
-### `Logger` **QMonitor.loggers.py**
-> Maps retrieved metrics and parameters into the main configuration dataclasses, formats the final result payload, and automatically uploads the JSON experiment log to a specified GitHub repository via the GitHub REST API.
+### `Logger` **QMonitor.logger.py**
+> Maps retrieved metrics and parameters into the main configuration dataclasses, formats the final result payload, and automatically uploads the JSON experiment log to a specified GitHub repository via the GitHub REST API. Suppresses errors if GitHub credentials are missing.
 
 #### Class Initialization Parameters
 
 | Parameter | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
-| `monitored_results` | `Dict` | Yes | The nested metric dictionary returned by the `Monitor` class. |
+| `monitored_results` | `Dict` | Yes | The nested metric dictionary returned by the `Monitor` class (`local_metrics` or `cloud_metrics`). |
 | `notes` | `str` | Yes | Custom user notes regarding the specific experiment run. |
 | `simulator_name` | `str` | Yes | Name of the quantum simulator or hardware device used. |
 | `benchmark_type` | `str` | Yes | Identifier for the type of benchmark being executed. |

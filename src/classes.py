@@ -4,6 +4,7 @@ import inspect
 import threading
 import boto3
 from datetime import datetime
+from botocore.exceptions import ClientError, NoCredentialsError, EndpointConnectionError
 from QMonitor.config.master_config import Config
 from .monitors.local.local_monitor import local_user_monitor
 from .monitors.cloud.ec2.ec2_monitor import (
@@ -58,23 +59,26 @@ class Monitor:
 
     def monitor_cloud(self, config, experiment_function, *args, **kwargs):
         params = self.__get_params(experiment_function, *args, **kwargs)
-        cloud_results = {}
+        try:
+            thread = ReturnableThread(experiment_function, kwargs=params)
+            thread.start()
+            thread.join()
+            
+            run_result = thread.result
 
-        thread = ReturnableThread(experiment_function, kwargs=params)
-        thread.start()
-        thread.join()
-        
-        run_result = thread.result
+            experiment_cloud_monitor_ec2 = ec2_machine_cloud_monitor(config, experiment_function, params)
+            experiment_cloud_ec2_metrics = ec2_instance_monitor(config, experiment_function, params)
+            experiment_cloud_braket_metrics = experiment_braket_monitor(config, experiment_function, params, run_result)
 
-        experiment_cloud_monitor_ec2 = ec2_machine_cloud_monitor(config, experiment_function, params)
-        experiment_cloud_ec2_metrics = ec2_instance_monitor(config, experiment_function, params)
-        experiment_cloud_braket_metrics = experiment_braket_monitor(config, experiment_function, params, run_result)
+            cloud_results = {}
+            cloud_results["EC2 Machine Experiment Metrics"] = experiment_cloud_monitor_ec2
+            cloud_results["EC2 Instance Experiment Metrics"] = experiment_cloud_ec2_metrics
+            cloud_results["Braket Experiment Metrics"] = experiment_cloud_braket_metrics
+            cloud_results["Parameters"] = params
 
-        cloud_results["EC2 Machine Experiment Metrics"] = experiment_cloud_monitor_ec2
-        cloud_results["EC2 Instance Experiment Metrics"] = experiment_cloud_ec2_metrics
-        cloud_results["Parameters"] = params
-
-        return cloud_results
+            return cloud_results
+        except (ClientError, NoCredentialsError, EndpointConnectionError):
+            return self.monitor_local(experiment_function, *args, **kwargs)
 
     @staticmethod
     def __get_params(func, *args, **kwargs):

@@ -1,41 +1,8 @@
 import os, boto3
 from datetime import datetime, timezone, timedelta
-from botocore.exceptions import ClientError, NoCredentialsError, EndpointConnectionError
 
 def ec2_instance_monitor(config, experiment_function, experiment_params):
-    ec2_instance_description = None
-    cw_client_instance = None
-
-    try:
-        ec2_instance_description = config.creds["ec2_client"].describe_instances()
-    except ClientError:
-        try:
-            cw_client_instance = boto3.client(
-                "cloudwatch",
-                aws_access_key_id=os.environ.get("AWS_ACCESS_KEY"),
-                aws_secret_access_key=os.environ.get("AWS_SECRET_KEY"),
-                region_name="us-east-1",
-            )
-        except NoCredentialsError:
-            from QMonitor.classes import Monitor
-            local_monitor = Monitor()
-            return local_monitor.monitor_local(experiment_function, **experiment_params)
-    except NoCredentialsError:
-        try:
-            cw_client_instance = boto3.client(
-                "cloudwatch",
-                aws_access_key_id=os.environ.get("AWS_ACCESS_KEY"),
-                aws_secret_access_key=os.environ.get("AWS_SECRET_KEY"),
-                region_name="us-east-1",
-            )
-        except NoCredentialsError:
-            from QMonitor.classes import Monitor
-            local_monitor = Monitor()
-            return local_monitor.monitor_local(experiment_function, **experiment_params)
-    except EndpointConnectionError:
-        from QMonitor.classes import Monitor
-        local_monitor = Monitor()
-        return local_monitor.monitor_local(experiment_function, **experiment_params)
+    ec2_instance_description = config.creds["ec2_client"].describe_instances()
 
     instance_types = config.creds["ec2_client"].describe_instance_types(
         InstanceTypes=["t3.micro", "m5.large"]
@@ -76,39 +43,7 @@ def ec2_machine_cloud_monitor(config, experiment_function, experiment_params):
     ram_average = 0
 
     cw_client_instance = config.creds["cw_client"]
-
-    try:
-        cw_client_instance.list_dashboards(PaginationConfig={"MaxItems": 1})
-    except ClientError:
-        try:
-            cw_new_client = boto3.client(
-                "cloudwatch",
-                aws_access_key_id=os.environ.get("AWS_ACCESS_KEY"),
-                aws_secret_access_key=os.environ.get("AWS_SECRET_KEY"),
-                region_name="us-east-1",
-            )
-            cw_client_instance = cw_new_client
-        except NoCredentialsError:
-            from QMonitor.classes import Monitor
-            local_monitor = Monitor()
-            return local_monitor.monitor_local(experiment_function, **experiment_params)
-    except NoCredentialsError:
-        try:
-            cw_new_client = boto3.client(
-                "cloudwatch",
-                aws_access_key_id=os.environ.get("AWS_ACCESS_KEY"),
-                aws_secret_access_key=os.environ.get("AWS_SECRET_KEY"),
-                region_name="us-east-1",
-            )
-            cw_client_instance = cw_new_client
-        except NoCredentialsError:
-            from QMonitor.classes import Monitor
-            local_monitor = Monitor()
-            return local_monitor.monitor_local(experiment_function, **experiment_params)
-    except EndpointConnectionError:
-        from QMonitor.classes import Monitor
-        local_monitor = Monitor()
-        return local_monitor.monitor_local(experiment_function, **experiment_params)
+    cw_client_instance.list_dashboards(PaginationConfig={"MaxItems": 1})
 
     ec2_usage = config.creds["ec2_client"].describe_instances(
         Filters=[{"Name": "instance-state-name", "Values": ["running"]}]

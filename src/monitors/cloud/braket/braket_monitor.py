@@ -1,38 +1,8 @@
 import boto3, os, sys
-from QMonitor.classes import Monitor
 from braket.aws import AwsSession
-from botocore.exceptions import ClientError, NoCredentialsError, EndpointConnectionError
 
 def experiment_braket_monitor(config, experiment_function, experiment_params, run_result):
-    device = None
-
-    try:
-        device = config.creds['braket_client'].search_devices()
-    except ClientError:
-        try:
-            cw_new_client = boto3.client(
-                "cloudwatch",
-                aws_access_key_id=os.environ.get("AWS_ACCESS_KEY"),
-                aws_secret_access_key=os.environ.get("AWS_SECRET_KEY"),
-                region_name="us-east-1",
-            )
-        except NoCredentialsError:
-            local_monitor = Monitor()
-            return local_monitor.monitor_local(experiment_function, **experiment_params)
-    except NoCredentialsError:
-        try:
-            cw_new_client = boto3.client(
-                "cloudwatch",
-                aws_access_key_id=os.environ.get("AWS_ACCESS_KEY"),
-                aws_secret_access_key=os.environ.get("AWS_SECRET_KEY"),
-                region_name="us-east-1",
-            )
-        except NoCredentialsError:
-            local_monitor = Monitor()
-            return local_monitor.monitor_local(experiment_function, **experiment_params)
-    except EndpointConnectionError:
-        local_monitor = Monitor()
-        return local_monitor.monitor_local(experiment_function, **experiment_params)
+    device = config.creds['braket_client'].search_devices()
 
     usage_results = {}
     infra_results = {}
