@@ -28,7 +28,10 @@ class Logger:
         return {f.name for f in fields(dataclass_obj)}
 
     def Log(self):
-        ec2_attrs = self.cloud_results.get("EC2 Instance Experiment Metrics", {}).get("ec2_instance_attributes", {})
+        # Safely handle None when running local benchmarks
+        cloud_data = self.cloud_results or {}
+        ec2_attrs = cloud_data.get("EC2 Instance Experiment Metrics", {}).get("ec2_instance_attributes", {})
+        
         if ec2_attrs:
             first_instance_key = list(ec2_attrs.keys())[0]
             self.config.env.instance_type = ec2_attrs[first_instance_key].get("Instance", "")
@@ -36,7 +39,7 @@ class Logger:
             self.config.env.instance_type = ""
 
         local_params = self.local_results.get("Parameters", {}) if self.local_results else {}
-        cloud_params = self.cloud_results.get("Parameters", {}) if self.cloud_results else {}
+        cloud_params = cloud_data.get("Parameters", {})
         get_experiment_params = local_params or cloud_params
 
         results_dataclass = Results(Config=asdict(self.config), Metrics={})
@@ -47,19 +50,14 @@ class Logger:
             results_dataclass.Metrics["Cloud_Monitor"] = self.cloud_results
 
         for key, value in get_experiment_params.items():
-
             if key in self.get_fields(self.config.gates):
                 setattr(self.config.gates, key, value)
-                
             elif key in self.get_fields(self.config.metric):
                 setattr(self.config.metric, key, value)
-                
             elif key in self.get_fields(self.config.env):
                 setattr(self.config.env, key, value)
-                
             elif key in self.get_fields(self.config.circ):
                 setattr(self.config.circ, key, value)
-                
             else:
                 self.config.gates.Others[key] = value
 
@@ -77,12 +75,15 @@ class Logger:
         if not token or not owner or not repo:
             return
 
-        path = f"test_logs/ec2_monitor_test_{datetime.now().isoformat()}"
+        # Safe environment fallback for LOG_PATH
+        log_prefix = os.environ.get("LOG_PATH", "test_logs/ec2_monitor_test_")
+        path = f"{log_prefix}{datetime.now().isoformat()}"
         branch = "main"
 
         url = f"https://api.github.com/repos/{owner}/{repo}/contents/{path}.json"
 
-        file_content = json.dumps(final_payload, indent=2)
+        # Pass default=str to safely serialize datetime objects
+        file_content = json.dumps(final_payload, indent=2, default=str)
         encoded_content = base64.b64encode(file_content.encode("utf-8")).decode("utf-8")
 
         payload = {
