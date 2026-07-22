@@ -1,6 +1,10 @@
 # Benchmarking Quantum Algorithms in the Cloud: A Comparative Study of Classical vs. Simulated Quantum Approaches on AWS
 <br>
 
+> [!IMPORTANT]
+> **Note on AWS Billing & Cost Safety:** 
+> **Set Native AWS Budgets:** Always set hard budget alerts and spending limits directly inside your AWS Billing Dashboard on the AWS Console. AWS is the only entity that can physically block a paid request from executing when a budget cap is hit; a Python monitoring package cannot block it for you.
+
 This repository contains the infrastructure for the
 **QWorld Qinternship 2026 - Project 26**
 
