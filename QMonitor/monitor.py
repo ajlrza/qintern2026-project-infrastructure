@@ -66,8 +66,8 @@ class Monitor:
             
             run_result = thread.result
 
-            experiment_cloud_monitor_ec2 = ec2_machine_cloud_monitor(config, experiment_function, params)
-            experiment_cloud_ec2_metrics = ec2_instance_monitor(config, experiment_function, params)
+            experiment_cloud_monitor_ec2 = ec2_machine_cloud_monitor(config)
+            experiment_cloud_ec2_metrics = ec2_instance_monitor(config)
             experiment_cloud_braket_metrics = experiment_braket_monitor(config, run_result)
 
             cloud_results = {}

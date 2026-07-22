@@ -28,9 +28,10 @@ class Logger:
         return {f.name for f in fields(dataclass_obj)}
 
     def Log(self):
-        if self.cloud_results and "EC2 Instance Experiment Metrics" in self.cloud_results and "ec2_instance_attributes" in self.cloud_results["EC2 Instance Experiment Metrics"]:
-            first_instance_key = list(self.cloud_results["EC2 Instance Experiment Metrics"]["ec2_instance_attributes"].keys())[0]
-            self.config.env.instance_type = self.cloud_results["EC2 Instance Experiment Metrics"]["ec2_instance_attributes"][first_instance_key].get("Instance", "")
+        ec2_attrs = self.cloud_results.get("EC2 Instance Experiment Metrics", {}).get("ec2_instance_attributes", {})
+        if ec2_attrs:
+            first_instance_key = list(ec2_attrs.keys())[0]
+            self.config.env.instance_type = ec2_attrs[first_instance_key].get("Instance", "")
         else:
             self.config.env.instance_type = ""
 

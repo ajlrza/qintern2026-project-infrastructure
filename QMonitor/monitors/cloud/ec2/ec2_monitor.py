@@ -1,25 +1,35 @@
 import os, boto3
 from datetime import datetime, timezone, timedelta
 
-def ec2_instance_monitor(config, experiment_function, experiment_params):
+def ec2_instance_monitor(config):
     ec2_instance_description = config.creds["ec2_client"].describe_instances()
 
-    instance_types = config.creds["ec2_client"].describe_instance_types(
-        InstanceTypes=["t3.microg"]
-    )
+    detected_types = set()
+    for reservation in ec2_instance_description.get("Reservations", []):
+        for instance in reservation.get("Instances", []):
+            itype = instance.get("InstanceType")
+            if itype:
+                detected_types.add(itype)
 
     ec2_instance_attributes = {}
 
-    for instance in instance_types["InstanceTypes"]:
-        result = {
-            "Instance": f"{instance['InstanceType']}",
-            "vCPUs": f"{instance['VCpuInfo']['DefaultVCpus']}",
-            "Memory": f"{instance['MemoryInfo']['SizeInMiB']} MiB",
-            "Processor": f"{instance.get('ProcessorInfo', 'N/A')}",
-            "GPU": f"{instance.get('GpuInfo', 'No GPU')}",
-            "Hypervisor": f"{instance.get('Hypervisor', 'N/A')}",
-        }
-        ec2_instance_attributes[f"Instance {instance['InstanceType']}"] = result
+    if detected_types:
+        instance_types = config.creds["ec2_client"].describe_instance_types(
+            InstanceTypes=list(detected_types)
+        )
+
+        for instance in instance_types.get("InstanceTypes", []):
+            result = {
+                "Instance": f"{instance['InstanceType']}",
+                "vCPUs": f"{instance['VCpuInfo']['DefaultVCpus']}",
+                "Memory": f"{instance['MemoryInfo']['SizeInMiB']} MiB",
+                "Processor": f"{instance.get('ProcessorInfo', 'N/A')}",
+                "GPU": f"{instance.get('GpuInfo', 'No GPU')}",
+                "Hypervisor": f"{instance.get('Hypervisor', 'N/A')}",
+            }
+            ec2_instance_attributes[f"Instance {instance['InstanceType']}"] = result
+    else:
+        print("No instances found. An instance may not have been launched, incorrect region, or lack of permission.")
 
     ec2_logged_data = {
         "ec2_instance": ec2_instance_description,
@@ -28,7 +38,8 @@ def ec2_instance_monitor(config, experiment_function, experiment_params):
 
     return ec2_logged_data
 
-def ec2_machine_cloud_monitor(config, experiment_function, experiment_params):
+
+def ec2_machine_cloud_monitor(config):
     infra_metrics = [
         "CPUUtilization",
         "mem_used_percent",

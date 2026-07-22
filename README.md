@@ -14,7 +14,7 @@ It contains:
 
 ## Repository Structure
 ```text
-📂 src
+📂 QMonitor
 ├── 📁 logger
 │   └── 📄 logger.py
 ├── 📁 monitors
@@ -26,10 +26,10 @@ It contains:
 │   │   └──📁 ec2
 │   │       └── 📄 ec2_monitor.py
 │   │
-├── 📄 .env.example
+├── 📄 pyproject.toml
 ├── 📄 README.md
-├── 📄 dev-config.yaml
-└── 📄 prod-config.yaml
+└── 📄 REFERENCES.md
+└── 📄 terraform.tf
 📂 assets
 └── 🖼️ Infrastructure.png
 ```
@@ -76,7 +76,7 @@ pip install git+https://github.com/ajlrza/qintern2026-project-infrastructure.git
 ```python
 import os
 import boto3
-from QMonitor.classes import Monitor
+from QMonitor.monitor import Monitor
 from QMonitor.logger import Logger
 
 # AWS Setup (Pre-existing in your notebook) 
