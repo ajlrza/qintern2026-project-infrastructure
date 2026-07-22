@@ -25,7 +25,7 @@ class ReturnableThread(threading.Thread):
 
 class Monitor:
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None, region_name=None):
-        self.start_time = datetime.fromtimestamp(time.time())
+        # Removed redundant datetime.fromtimestamp assignment
         self.computer_time = time.time()
         self.start_time = time.strftime("%Y-%m-%d %H:%M:%S")
 
