@@ -1,7 +1,7 @@
 import boto3, os, sys
 from braket.aws import AwsSession
 
-def experiment_braket_monitor(config, experiment_function, experiment_params, run_result):
+def experiment_braket_monitor(config, run_result):
     device = config.creds['braket_client'].search_devices()
 
     usage_results = {}

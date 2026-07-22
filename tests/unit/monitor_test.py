@@ -8,14 +8,6 @@ from braket.circuits import Circuit
 from braket.devices import LocalSimulator
 from src.classes import Monitor
 
-sts = boto3.client(
-    "sts",
-    aws_access_key_id=os.environ.get("AWS_ACCESS_KEY"),
-    aws_secret_access_key=os.environ.get("AWS_SECRET_KEY"),
-    region_name=os.environ.get("AWS_DEFAULT_REGION"),
-)
-
-
 def quantum_rng(n_bits, shots=10000):
     """
     Generate quantum random bits using Hadamard gates.

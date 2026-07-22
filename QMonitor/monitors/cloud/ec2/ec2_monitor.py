@@ -5,7 +5,7 @@ def ec2_instance_monitor(config, experiment_function, experiment_params):
     ec2_instance_description = config.creds["ec2_client"].describe_instances()
 
     instance_types = config.creds["ec2_client"].describe_instance_types(
-        InstanceTypes=["t3.micro", "m5.large"]
+        InstanceTypes=["t3.micro"]
     )
 
     ec2_instance_attributes = {}
