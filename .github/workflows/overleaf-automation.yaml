@@ -51,13 +51,17 @@ jobs:
         run: |
           curl -H "Accept: application/vnd.github+json" \
                -H "X-GitHub-Api-Version: 2026-03-10" \
-               "https://api.github.com/repos/Shel-y/https://github.com/Shel-y/qintern2026-quantum-benchmarking/commits/(cat .last_seen_sha)" > .commit.json
+               "https://api.github.com/repos/Shel-y/https://github.com/Shel-y/qintern2026-quantum-benchmarking/commits/results/$(cat .last_seen_sha))" > .commit.json
      
       - name: Filter Commit File
         id: filter-commit
         run: |
           if [ -s .commit_txt ]; then
-            if [ jq '.commit.name' file.json]
+            if [ jq '.files.type .commit.json] == "png"; then
+                  [ jq '.files.contents_url .commit.json ] > .content_url
+                  curl -H "Accept: application/vnd.github+json" \
+                  -H "X-GitHub-Api-Version: 2026-03-10" \
+                  "https://api.github.com/repos/Shel-y/https://github.com/Shel-y/qintern2026-quantum-benchmarking/contents/$(cat .content_url)" > .graph.png
           else
               echo "The file $FILE is empty or does not exist."
           fi
